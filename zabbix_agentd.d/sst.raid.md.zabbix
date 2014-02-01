@@ -1,0 +1,26 @@
+# Linux software RAID (md) status
+# 
+#
+# RAID level of a specific md device 
+# $1: MD device, for example /dev/md2
+UserParameter=sst.raid.md.raid-level[*],/usr/bin/sudo /sbin/mdadm --detail $1 | grep -E '^ *Raid Level :' | cut -d ':' -f 2 | cut -c 2-
+
+# RAID state of a specific md device
+# $1: MD device, for example /dev/md2
+UserParameter=sst.raid.md.state[*],/usr/bin/sudo /sbin/mdadm --detail $1 | grep -E '^ *State :' | cut -d ':' -f 2 | cut -c 2-
+
+# Number of active devices in a given RAID set 
+# $1: MD device, for example /dev/md2
+UserParameter=sst.raid.md.devices.active[*],/usr/bin/sudo /sbin/mdadm --detail $1 | grep -E '^ *Active Devices :' | cut -d ':' -f 2 | cut -c 2-
+
+# Number of working devices in a given RAID set 
+# $1: MD device, for example /dev/md2
+UserParameter=sst.raid.md.devices.working[*],/usr/bin/sudo /sbin/mdadm --detail $1 | grep -E '^ *Working Devices :' | cut -d ':' -f 2 | cut -c 2-
+
+# Number of spare devices in a given RAID set 
+# $1: MD device, for example /dev/md2
+UserParameter=sst.raid.md.devices.spare[*],/usr/bin/sudo /sbin/mdadm --detail $1 | grep -E '^ *Failed Devices :' | cut -d ':' -f 2 | cut -c 2-
+
+# Number of failed devices in a given RAID set 
+# $1: MD device, for example /dev/md2
+UserParameter=sst.raid.md.devices.failed[*],/usr/bin/sudo /sbin/mdadm --detail $1 | grep -E '^ *Spare Devices :' | cut -d ':' -f 2 | cut -c 2-

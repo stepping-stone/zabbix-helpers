@@ -1,0 +1,4 @@
+##
+## Linux software RAID mdadm command alias specifications
+##
+Cmnd_Alias MDADM_DETAILS = /sbin/mdadm --detail /dev/md*
