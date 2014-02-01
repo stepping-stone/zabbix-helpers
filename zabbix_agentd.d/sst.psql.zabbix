@@ -1,0 +1,20 @@
+# PostgreSQL sum over a column value from pg_stat_database
+# $1: PostgreSQL login user role 
+# $2: Colum name of a pg_stat_database view
+#     Note that this is vulnerable to SQL injections, but keeps the number of
+#     required UserParamater definitions low as one can easily create a new
+#     item within the Zabbix web interface.
+#     For possible cloumn values, see:
+#     http://www.postgresql.org/docs/current/static/monitoring-stats.html#PG-STAT-DATABASE-VIEW
+UserParameter=sst.psql.stat.database.sum[*],psql -d template1 -U $1 -t -c "SELECT SUM($2) FROM pg_stat_database"
+
+# PostgreSQL value from a pg_stat_database column related to a specific database
+# $1: PostgreSQL login user role 
+# $2: Colum name of a pg_stat_database view
+# $3: Name of a specific database
+#     Note that this is vulnerable to SQL injections, but keeps the number of
+#     required UserParamater definitions low as one can easily create a new
+#     item within the Zabbix web interface.
+#     For possible cloumn values, see:
+#     http://www.postgresql.org/docs/current/static/monitoring-stats.html#PG-STAT-DATABASE-VIEW
+UserParameter=sst.psql.stat.database.db.value[*],psql -d template1 -U $1 -t -c "SELECT $2 FROM pg_stat_database WHERE datname = '$3'"
