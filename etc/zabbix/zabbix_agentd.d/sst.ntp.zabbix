@@ -1,0 +1,4 @@
+# Returns the status of a given NTP server
+# $1: Peer (server) address (such as ntp.example.com or 192.0.2.123)
+# $2: Optional timeout in milliseconds after which a request fails.
+UserParameter=sst.ntp.peer.status[*],/usr/libexec/zabbix/ntp-check.sh $1 $2
