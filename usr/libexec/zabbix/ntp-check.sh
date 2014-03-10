@@ -59,6 +59,15 @@ DEBUG="${DEBUG:-false}"
 
 NTPQ_CMD="/usr/bin/ntpq"
 
+if ! test -x "${NTPQ_CMD}"; then
+    NTPQ_CMD="/usr/sbin/ntpq"
+
+    if ! test -x "${NTPQ_CMD}"; then
+        echo "Missing ntpq command: '${NTPQ_CMD}'" >&2
+        exit 1
+    fi
+fi
+
 
 function main ()
 {
