@@ -30,8 +30,9 @@
 # Description:
 # Zabbix user parameter helper script which checks a given IPv4 address against
 # a given DNS based blacklist. It echos '1' (one) if the IP appears on the
-# blacklist, otherwise '0' (zero). These values can be mapped easily within
-# Zabbix.
+# blacklist, '0' (zero) if the IP is not blacklistet, '2' (two) if the query
+# timed out and '3' (three) on any other (dig) error. These values can be mapped
+# easily within Zabbix.
 #
 # The script reverses the IP address octets, prepend them to the BL domain and
 # queries the DNS resolver for an A record of this domain via the dig command.
@@ -86,12 +87,44 @@ function main ()
     ${DEBUG} && echo "dig command: ${digCommand}"
 
     local answer
-    answer="$( ${digCommand} )"
+    answer="$( ${digCommand} > /dev/null 2>&1)"
     local digReturnCode=$?
 
     if ${DEBUG}; then
         echo "dig return code: ${digReturnCode}"
         echo "answer: '$answer'"
+    fi
+
+    if [ ${digReturnCode} -ne 0 ]; then
+        case "${digReturnCode}" in
+            1)
+                ${DEBUG} && echo "Dig: Usage error"
+                echo "3"
+                ;;
+
+            8)
+                ${DEBUG} && echo "Dig: Couldn't open batch file"
+                echo "3"
+                ;;
+
+            9)
+                ${DEBUG} && echo "Dig: No reply from server"
+                echo "2"
+                ;;
+
+            10)
+                ${DEBUG} && echo "Dig: Internal error"
+                echo "3"
+                ;;
+
+            *)
+                ${DEBUG} && echo "Dig: Unknown error"
+                echo "3"
+                ;;
+        esac
+
+        # Terminate
+        return $digReturnCode
     fi
 
     if [ "${answer}" == "${result}" ]; then
