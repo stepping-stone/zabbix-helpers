@@ -82,7 +82,7 @@ function main ()
     local reverseIp="${ipOctets[3]}.${ipOctets[2]}.${ipOctets[1]}.${ipOctets[0]}"
 
     local digCommand
-    digCommand="${DIG_CMD} -t A -q ${reverseIp}.${blDomain} +short +time=3"
+    digCommand="${DIG_CMD} -t A -q ${reverseIp}.${blDomain} +short +tries=2 +time=1"
     ${DEBUG} && echo "dig command: ${digCommand}"
 
     local answer
