@@ -1,0 +1,4 @@
+# Checks if a given IP address is present on the system
+# $1: IP address (such as 192.0.2.123)
+# Returns 0 if the address is available, otherwise 1 or > 1 in case of errors
+UserParameter=sst.net.ip.present[*],/bin/ip addr show to $1/32 | /bin/grep -q $1; echo $?
