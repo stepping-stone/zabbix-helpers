@@ -2,4 +2,4 @@
 # $1: Blacklist domain name (such as bl.example.com)
 # $2: IP address to check against the blacklist (such as 192.0.2.123)
 # $3: Optional, expected result if the IP is blacklisted, defaults to 127.0.0.2
-UserParameter=sst.dns.blacklist.check[*],/usr/libexec/zabbix/dnsbl-check.sh $1 $2 $3 $4
+UserParameter=sst.dns.blacklist.check[*],/usr/libexec/zabbix-helpers/dnsbl-check.sh $1 $2 $3 $4
