@@ -1,0 +1,9 @@
+# HAProxy status information.
+
+# HAProxy global information.
+# $1: Desired status variable (e.g. CurrConns).
+UserParameter=sst.haproxy.info[*],/usr/libexec/zabbix-helpers/get-status.sh -s haproxy-info -v $1
+
+# HAProxy state information.
+# $1: Desired frontend, backend or server (e.g. http_https_in/FRONTEND).
+UserParameter=sst.haproxy.state[*],/usr/libexec/zabbix-helpers/get-status.sh -s haproxy-state -v $1
