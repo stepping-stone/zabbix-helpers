@@ -1,22 +1,20 @@
 #Zabbix Helpers
-
 ##Overview
-Zabbix monitoring helper scripts, mostly Zabbix Agent user parameters.
+Zabbix monitoring helper scripts.
 
 ##Scripts
-
 ###get-status.sh
+Script: `/usr/libexec/zabbix-helpers/get-status.sh`
 
-Script:   `/usr/libexec/zabbix-helpers/get-status.sh`
-Config:   `/etc/zabbix-helpers/get-status.conf`
+Config: `/etc/zabbix-helpers/get-status.conf`
+
 Services: `/etc/zabbix-helpers/get-status.d/*.conf`
 
 ####Services
 #####mysql
-
-Requirements:
+######mysql - Requirements
 * MySQL Client
-
+* MySQL option file:
 Create a dedicated MySQL user for the Zabbix Agent and store the credentials in a MySQL option file:
 ```bash
 # The MySQL user.
@@ -40,24 +38,21 @@ chmod 640 /var/lib/zabbix/home/.my.cnf
 ```
 
 #####haproxy-info
-
-Requirements:
+######haproxy-info - Requirements
 * socat
 
 #####haproxy-state
-
-Requirements:
+######haproxy-state - Requirements
 * socat
 
 ###mysqlcheck.php
-
-Requirements:
-* PHP
-
 Script: `/usr/share/zabbix-helpers/mysqlcheck.php`
+
 Config: `/etc/zabbix-helpers/mysqlcheck.conf`
 
-1. Create the database and table:
+####mysqlcheck.php - Requirements
+* PHP
+* Create the database and table:
 
 ```bash
 CREATE DATABASE `mysqlcheck` CHARACTER SET utf8;
@@ -72,5 +67,4 @@ CREATE TABLE IF NOT EXISTS `mysqlcheck`
 
 GRANT SELECT, INSERT, UPDATE, DELETE ON `mysqlcheck`.`mysqlcheck` TO 'mysqlcheck'@'localhost' IDENTIFIED BY '<Password>';
 ```
-
-2. Adjust the config file. 
+* Adjust the config file. 
