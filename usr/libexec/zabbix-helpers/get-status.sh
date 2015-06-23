@@ -104,7 +104,7 @@ function setService ()
         datePattern=$(echo ${datePattern} | ${SED_CMD} -e "s/%VALUE_NAME%/${dateValueName}/g" -e "s/%VALUE%/${dateGenerationCommand}/g")
     else
         echo -e "Error: The service \"${serviceName}\" isn't supported.\n" >&2
-        showAvailableServices
+        showAvailableServices "error"
         exit 1
     fi
 }
@@ -158,26 +158,23 @@ function checkStatusFile ()
 # Generate the status file by using the status generation command. 
 function generateStatusFile ()
 {
-    statusOutput=$(${statusGenerationCommand} 2> /dev/null)
+    statusOutput=$(eval "${statusGenerationCommand}" 2> /dev/null)
     statusCode=${?}
     if [ ${statusCode} -eq 0 ]; then
         ${showDebugMessages} && echo "Info: The status generation command was successful."
-        echo 2> /dev/null "${statusOutput}" > ${statusFile}
-        statusCode=${?}
-        if [ ${statusCode} -eq 0 ]; then
-            ${showDebugMessages} && echo "Info: The status could be written down successfully."
-            echo 2> /dev/null -e "${datePattern}" >> ${statusFile}
+        if [ -z "${statusOutput}" ]; then
+            ${showDebugMessages} && echo "Error: The status generation command produced an empty output."
+            exit 1
+        else
+            # Write down the status output and the date to the status file.
+            printf 2> /dev/null '%b\n' "${statusOutput}" "${datePattern}" > "${statusFile}"
             statusCode=${?}
             if [ ${statusCode} -eq 0 ]; then
-                ${showDebugMessages} && echo "Info: The date could be generated / updated successfully."
-                ${showDebugMessages} && echo "Info: The status file could be generated / updated successfully."
+                ${showDebugMessages} && echo "Info: The status could be written down successfully."
             else
-                ${showDebugMessages} && echo "Error: The date couldn't be generated / updated. Status code: ${statusCode}"
+                ${showDebugMessages} && echo "Error: The status couldn't be written down. Status code: ${statusCode}"
                 exit 1
             fi
-        else    
-            ${showDebugMessages} && echo "Error: The status couldn't be written down. Status code: ${statusCode}"
-            exit 1
         fi
     else
         ${showDebugMessages} && echo "Error: The status generation command failed. Status code: ${statusCode}" >&2
@@ -210,7 +207,13 @@ function getValue ()
 # Show available services.
 function showAvailableServices ()
 {
-    echo -e "List of available services:" >&2
+    if [ "${1}" == "error" ]; then
+        logDest="2"
+    else
+        logDest="1"
+    fi
+
+    echo -e "List of available services:" >&"${logDest}"
     for availableService in ${availableServiceList[@]}; do
         while read line; do
             if [[ ${line} == serviceDescription=* ]]; then
@@ -218,7 +221,7 @@ function showAvailableServices ()
                 break
             fi
         done < "${serviceConfDir}/${availableService}.${serviceConfSuff}"
-        echo -e "\t- ${availableService} (${serviceDescription})" >&2
+        echo -e "\t- ${availableService} (${serviceDescription})" >&"${logDest}"
     done
 }
 
@@ -226,15 +229,21 @@ function showAvailableServices ()
 # Show the help text.
 function showHelp ()
 {
-    echo -e "Usage: $(${BASENAME_CMD} ${0}) [-d] [-f] -s <SERVICE> -v <VALUE> | -a\n" \
+    if [ "${1}" == "error" ]; then
+        logDest="2"
+    else
+        logDest="1"
+    fi
+
+    echo -e "Usage: $(${BASENAME_CMD} ${0}) [-d] [-f] -s <SERVICE> -v <VALUE NAME> | -a\n" \
     "\t-d\t\tDebug mode\n" \
     "\t-f\t\tForce generation / update of the status\n" \
     "\t-h\t\tShow this help text\n" \
     "\t-s <SERVICE>\tThe service which should be used\n" \
     "\t-v <VALUE NAME>\tThe name of the value which should be returned\n" \
-    "\t-a\t\tPrint the entire status file\n" >&2
+    "\t-a\t\tPrint the entire status file\n" >&"${logDest}"
    
-    showAvailableServices
+    showAvailableServices "${1}"
 }
 
 # Get options.
@@ -261,20 +270,20 @@ while getopts ':s:v:ahdf' option; do
             ;;
         \?)
             echo -e "Error: Invalid option -$OPTARG.\n" >&2
-            showHelp
+            showHelp "error"
             exit 1
             ;;
         :)
             echo -e "Error: Option -$OPTARG requires an argument.\n" >&2
-            showHelp
+            showHelp "error"
             exit 1
             ;;
     esac
 done
 
 # Check for required options.
-if [[ ${serviceName} ]] && ( [[ ${valueName} ]] || ${showAll} ); then
-    # Set the path to the script file, used in the configuration.
+if [[ ${serviceName} ]] && ( [[ ${valueName} ]] || ${showAll} ) && ! ( [[ ${valueName} ]] && ${showAll} ); then
+    # Set the path to the script file. Used in the configuration files.
     scriptFile=$(${READLINK_CMD} -f ${0})
     scriptPath=$(${DIRNAME_CMD} ${scriptFile})
 
@@ -305,8 +314,8 @@ if [[ ${serviceName} ]] && ( [[ ${valueName} ]] || ${showAll} ); then
     # Call the main function.
     main
 else
-    echo -e "Error: Missing option.\n" >&2
+    echo -e "Error: Missing or wrongly used option(s).\n" >&2
     # Call the showHelp function and exit.
-    showHelp
+    showHelp "error"
     exit 1
 fi
