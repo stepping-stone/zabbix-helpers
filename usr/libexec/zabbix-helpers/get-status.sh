@@ -7,7 +7,7 @@
 #                    Switzerland
 #                    http://www.stepping-stone.ch
 #                    support@stepping-stone.ch
-#  
+# 
 # Authors:
 #  Pascal Jufer <pascal.jufer@stepping-stone.ch>
 #
@@ -42,9 +42,11 @@ BASENAME_CMD="/bin/basename"
 CAT_CMD="/bin/cat"
 DIRNAME_CMD="/bin/dirname"
 FIND_CMD="/usr/bin/find"
+HEAD_CMD="/bin/head"
 LS_CMD="/bin/ls"
 READLINK_CMD="/bin/readlink"
 SED_CMD="/bin/sed"
+TAIL_CMD="/bin/tail"
 TOUCH_CMD="/bin/touch"
 
 ##############
@@ -110,7 +112,7 @@ function setService ()
 }
 
 ##############
-# Check wheater the status file exists and is younger than update interval. 
+# Check wheater the status file exists and is younger than update interval.
 function checkStatusFile ()
 {
     if [ -f ${statusFile} ]; then
@@ -155,16 +157,26 @@ function checkStatusFile ()
 }
 
 ##############
-# Generate the status file by using the status generation command. 
+# Generate the status file.
 function generateStatusFile ()
 {
-    statusOutput=$(eval "${statusGenerationCommand}" 2> /dev/null)
-    statusCode=${?}
-    if [ ${statusCode} -eq 0 ]; then
+    # Execute the status generartion command and append the exit status.
+    statusOutput=$(eval "${statusGenerationCommand}; echo \${PIPESTATUS[@]}" 2> /dev/null)
+    # Filter out the exit status.
+    statusCode=$(echo "${statusOutput}" | ${TAIL_CMD} -1)
+    # Filter out the status output.
+    statusOutput=$(echo "${statusOutput}" | ${HEAD_CMD} -n -2)
+    # Check if one of the exit status is not 0.
+    for code in ${statusCode}; do
+        if [[ ${code} != 0 ]]; then
+            statusFailed=true
+            break
+        fi
+    done
+    if [ ! ${statusFailed} ]; then
         ${showDebugMessages} && echo "Info: The status generation command was successful."
         if [ -z "${statusOutput}" ]; then
             ${showDebugMessages} && echo "Error: The status generation command produced an empty output."
-            exit 1
         else
             # Write down the status output and the date to the status file.
             printf 2> /dev/null '%b\n' "${statusOutput}" "${datePattern}" > "${statusFile}"
@@ -178,7 +190,6 @@ function generateStatusFile ()
         fi
     else
         ${showDebugMessages} && echo "Error: The status generation command failed. Status code: ${statusCode}" >&2
-        exit 1
     fi
 }
 
@@ -242,7 +253,7 @@ function showHelp ()
     "\t-s <SERVICE>\tThe service which should be used\n" \
     "\t-v <VALUE NAME>\tThe name of the value which should be returned\n" \
     "\t-a\t\tPrint the entire status file\n" >&"${logDest}"
-   
+
     showAvailableServices "${1}"
 }
 
@@ -262,7 +273,7 @@ while getopts ':s:v:ahdf' option; do
             showHelp
             exit 0
             ;;
-        d)  
+        d)
             showDebugMessages=true
             ;;
         f)
@@ -290,17 +301,17 @@ if [[ ${serviceName} ]] && ( [[ ${valueName} ]] || ${showAll} ) && ! ( [[ ${valu
     # Load the configuration.
     confFile="${scriptPath}/../../../etc/zabbix-helpers/get-status.conf"
     source ${confFile}
-    statusCode=${?}                                                     
+    statusCode=${?}
     if [ ${statusCode} -eq 0 ]; then
         ${showDebugMessages} && echo "Info: Configuration file loaded successfully."
     else
         ${showDebugMessages} && echo "Error: Couldn't load the configuration file. Status code: ${statusCode}" >&2
         exit 1
     fi
-    
+ 
     # Get available services.
     serviceConfList=$(${LS_CMD} ${serviceConfDir}/*.${serviceConfSuff} 2> /dev/null)
-    statusCode=${?}                                                     
+    statusCode=${?}
     if [ ${statusCode} -eq 0 ]; then
         ${showDebugMessages} && echo "Info: Looked up available services successfully."
     else
