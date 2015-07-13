@@ -39,6 +39,7 @@ serviceAvailable=false
 
 # Paths for external commands.
 BASENAME_CMD="/bin/basename"
+BASH_CMD="/bin/bash"
 CAT_CMD="/bin/cat"
 DIRNAME_CMD="/bin/dirname"
 FIND_CMD="/usr/bin/find"
@@ -47,6 +48,7 @@ LS_CMD="/bin/ls"
 READLINK_CMD="/bin/readlink"
 SED_CMD="/bin/sed"
 TAIL_CMD="/bin/tail"
+TIMEOUT_CMD="/usr/bin/timeout"
 TOUCH_CMD="/bin/touch"
 
 ##############
@@ -180,36 +182,42 @@ function generateStatusFile ()
 {
 
     # Execute the status generation command and append the exit status.
-    statusOutput=$(eval "${statusGenerationCommand}; echo \${PIPESTATUS[@]}" 2> /dev/null)
-    # Filter out the exit status.
-    statusOutputStatusCode=$(echo "${statusOutput}" | ${TAIL_CMD} -1)
-    # Filter out the status output.
-    statusOutput=$(echo "${statusOutput}" | ${HEAD_CMD} -n -2)
-    # Check wheater one of the exit status is not 0.
-    for code in ${statusOutputStatusCode}; do
-        if [[ ${code} != 0 ]]; then
-            statusFailed=true
-            break
-        fi
-    done
-    if [ ! ${statusFailed} ]; then
-        ${showDebugMessages} && echo "Info: The status generation command was successful."
-        # Check wheater the status output is empty.
-        if [ -z "${statusOutput}" ]; then
-            ${showDebugMessages} && echo "Error: The status generation command produced an empty output." >&2
-        else
-            # Write down the status output and the date to the status file.
-            printf 2> /dev/null '%b\n' "${statusOutput}" "${datePattern}" > "${statusFile}"
-            writeStatusOutputStatusCode=${?}
-            if [ ${writeStatusOutputStatusCode} -eq 0 ]; then
-                ${showDebugMessages} && echo "Info: The status could be written down successfully."
-            else
-                ${showDebugMessages} && echo "Error: The status couldn't be written down. Status code: ${writeStatusOutputStatusCode}" >&2
-                exit 1
-            fi
-        fi
+    statusOutput=$(${TIMEOUT_CMD} ${statusGenerationTimeout} ${BASH_CMD} -c "${statusGenerationCommand}; echo \${PIPESTATUS[@]}")
+    timeoutStatusCode=${?}
+    # Check weather the timeout has been reached.
+    if [ ${timeoutStatusCode} -eq 124 ]; then
+        ${showDebugMessages} && echo "Error: The timeout of ${statusGenerationTimeout} seconds for the status generation command has been reached."
     else
-        ${showDebugMessages} && echo "Error: The status generation command failed. Status code: ${statusOutputStatusCode}" >&2
+        # Filter out the exit status.
+        statusOutputStatusCode=$(echo "${statusOutput}" | ${TAIL_CMD} -1)
+        # Filter out the status output.
+        statusOutput=$(echo "${statusOutput}" | ${HEAD_CMD} -n -2)
+        # Check wheater one of the exit status is not 0.
+        for code in ${statusOutputStatusCode}; do
+            if [[ ${code} != 0 ]]; then
+                statusFailed=true
+                break
+            fi
+        done
+        if [ ! ${statusFailed} ]; then
+            ${showDebugMessages} && echo "Info: The status generation command was successful."
+            # Check wheater the status output is empty.
+            if [ -z "${statusOutput}" ]; then
+                ${showDebugMessages} && echo "Error: The status generation command produced an empty output." >&2
+            else
+                # Write down the status output and the date to the status file.
+                printf 2> /dev/null '%b\n' "${statusOutput}" "${datePattern}" > "${statusFile}"
+                writeStatusOutputStatusCode=${?}
+                if [ ${writeStatusOutputStatusCode} -eq 0 ]; then
+                    ${showDebugMessages} && echo "Info: The status could be written down successfully."
+                else
+                    ${showDebugMessages} && echo "Error: The status couldn't be written down. Status code: ${writeStatusOutputStatusCode}" >&2
+                    exit 1
+                fi
+            fi
+        else
+            ${showDebugMessages} && echo "Error: The status generation command failed. Status code: ${statusOutputStatusCode}" >&2
+        fi
     fi
 }
 
