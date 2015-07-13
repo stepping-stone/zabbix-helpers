@@ -132,9 +132,9 @@ function checkStatusFile ()
         if [[ -r ${statusFile} && -w ${statusFile} ]]; then
             # Lookup the age of the status file.
             checkStatusFileAge=$(${FIND_CMD} ${statusFile} -mmin +${updateInterval} 2> /dev/null)
-            statusCode=${?}
+            checkStatusFileAgeStatusCode=${?}
             # Check wheater the status file age lookup was successful.
-            if [ ${statusCode} -eq 0 ]; then
+            if [ ${checkStatusFileAgeStatusCode} -eq 0 ]; then
                 ${showDebugMessages} && echo "Info: The status file age check was successful."
                 # If there is no return value, the status file age is younger than the update interval.
                 # Else, the status file is older than the update interval.
@@ -152,7 +152,7 @@ function checkStatusFile ()
                     return 1
                 fi
             else
-                ${showDebugMessages} && echo "Error: The status file age check wasn't successful. Status code: ${statusCode}" >&2
+                ${showDebugMessages} && echo "Error: The status file age check wasn't successful. Status code: ${checkStatusFileAgeStatusCode}" >&2
                 exit 1
             fi
         else
@@ -163,8 +163,8 @@ function checkStatusFile ()
         # If the status file doesn't exist yet, test wheater it's creatable.
         ${showDebugMessages} && echo "Info: The status file doesn't exist yet."
         ${TOUCH_CMD} -c ${statusFile} 2> /dev/null
-        statusCode=${?}
-        if [ ${statusCode} -eq 0 ]; then
+        testStatusFileStatusCode=${?}
+        if [ ${testStatusFileStatusCode} -eq 0 ]; then
             ${showDebugMessages} && echo "Info: The status file can be created."
             return 1
         else
@@ -178,14 +178,15 @@ function checkStatusFile ()
 # Generate the status file.
 function generateStatusFile ()
 {
+
     # Execute the status generation command and append the exit status.
     statusOutput=$(eval "${statusGenerationCommand}; echo \${PIPESTATUS[@]}" 2> /dev/null)
     # Filter out the exit status.
-    statusCode=$(echo "${statusOutput}" | ${TAIL_CMD} -1)
+    statusOutputStatusCode=$(echo "${statusOutput}" | ${TAIL_CMD} -1)
     # Filter out the status output.
     statusOutput=$(echo "${statusOutput}" | ${HEAD_CMD} -n -2)
     # Check wheater one of the exit status is not 0.
-    for code in ${statusCode}; do
+    for code in ${statusOutputStatusCode}; do
         if [[ ${code} != 0 ]]; then
             statusFailed=true
             break
@@ -199,16 +200,16 @@ function generateStatusFile ()
         else
             # Write down the status output and the date to the status file.
             printf 2> /dev/null '%b\n' "${statusOutput}" "${datePattern}" > "${statusFile}"
-            statusCode=${?}
-            if [ ${statusCode} -eq 0 ]; then
+            writeStatusOutputStatusCode=${?}
+            if [ ${writeStatusOutputStatusCode} -eq 0 ]; then
                 ${showDebugMessages} && echo "Info: The status could be written down successfully."
             else
-                ${showDebugMessages} && echo "Error: The status couldn't be written down. Status code: ${statusCode}" >&2
+                ${showDebugMessages} && echo "Error: The status couldn't be written down. Status code: ${writeStatusOutputStatusCode}" >&2
                 exit 1
             fi
         fi
     else
-        ${showDebugMessages} && echo "Error: The status generation command failed. Status code: ${statusCode}" >&2
+        ${showDebugMessages} && echo "Error: The status generation command failed. Status code: ${statusOutputStatusCode}" >&2
     fi
 }
 
@@ -218,9 +219,9 @@ function getValue ()
 {
     # Execute the value lookup commando.
     returnValue=$(${SED_CMD} -n "s/${valuePattern}/\1/p" ${statusFile} 2> /dev/null)
-    statusCode=${?}
+    returnValueStatusCode=${?}
     # Check wheater the value lookup commando was successful.
-    if [ ${statusCode} -eq 0 ]; then
+    if [ ${returnValueStatusCode} -eq 0 ]; then
         # Check wheater the value is empty.
         if [ -z ${returnValue} ]; then
             ${showDebugMessages} && echo "Error: Value doesn't exist or is empty." >&2
@@ -231,7 +232,7 @@ function getValue ()
             exit 0
         fi
     else
-        ${showDebugMessages} && echo "Error: The value lookup commando failed. Status code: ${statusCode}" >&2
+        ${showDebugMessages} && echo "Error: The value lookup commando failed. Status code: ${returnValueStatusCode}" >&2
         exit 1
     fi
 }
@@ -332,21 +333,21 @@ if [[ ${serviceName} ]] && ( [[ ${valueName} ]] || ${showAll} ) && ! ( [[ ${valu
     # Load the configuration.
     confFile="${scriptPath}/../../../etc/zabbix-helpers/get-status.conf"
     source ${confFile}
-    statusCode=${?}
-    if [ ${statusCode} -eq 0 ]; then
+    sourceConfFileStatusCode=${?}
+    if [ ${sourceConfFileStatusCode} -eq 0 ]; then
         ${showDebugMessages} && echo "Info: Configuration file loaded successfully."
     else
-        ${showDebugMessages} && echo "Error: Couldn't load the configuration file. Status code: ${statusCode}" >&2
+        ${showDebugMessages} && echo "Error: Couldn't load the configuration file. Status code: ${sourceConfFileStatusCode}" >&2
         exit 1
     fi
  
     # Get available services.
     serviceConfList=$(${LS_CMD} ${serviceConfDir}/*.${serviceConfSuff} 2> /dev/null)
-    statusCode=${?}
-    if [ ${statusCode} -eq 0 ]; then
+    serviceConfListStatusCode=${?}
+    if [ ${serviceConfListStatusCode} -eq 0 ]; then
         ${showDebugMessages} && echo "Info: Looked up available services successfully."
     else
-        ${showDebugMessages} && echo "Error: There is no service available. Status code: ${statusCode}" >&2
+        ${showDebugMessages} && echo "Error: There is no service available. Status code: ${serviceConfListStatusCode}" >&2
         exit 1
     fi
     for serviceConf in ${serviceConfList}; do
