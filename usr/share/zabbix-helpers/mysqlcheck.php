@@ -7,22 +7,25 @@
  *  
  * Authors:
  *  Yannick Denzer <yannick.denzer@stepping-stone.ch>
+ *  Pascal Jufer <pascal.jufer@stepping-stone.ch>
  *
- * This file is part of the stoney cloud.
- *
- * stoney cloud is free software: you can redistribute it and/or
+ * This program is free software: you can redistribute it and/or
  * modify it under the terms of the GNU Affero General Public 
  * License as published  by the Free Software Foundation, version
  * 3 of the License.
  *
- * stoney cloud is distributed in the hope that it will be useful,
+ * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU Affero General Public License for more details.
  *
  * You should have received a copy of the GNU Affero General Public
- * License  along with stoney cloud.
+ * License along with this program.
  * If not, see <http://www.gnu.org/licenses/>.
+ *
+ * Description:
+ * Check the availability of a MySQL service by writing and reading
+ * to resp. from a database. Return a corresponding HTTP code.
  *
  */
 
@@ -133,7 +136,7 @@ class MySQLCheck {
 	}
 }
 
-require_once '../../../etc/zabbix-helpers/mysqlcheck.conf';
+require_once(dirname(__FILE__) . '../../../etc/zabbix-helpers/mysqlcheck.conf');
 
 $hc = new MySQLCheck($_CONFIG);
 $hc->run();
