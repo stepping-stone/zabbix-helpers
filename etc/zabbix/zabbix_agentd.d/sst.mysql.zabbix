@@ -1,3 +1,7 @@
-# MySQL server status information.
-# $1: Desired status variable (e.g. Slow_queries).
-UserParameter=sst.mysql.status[*],/usr/libexec/zabbix-helpers/get-status.sh -s mysql -v $1
+# MySQL global status
+# $1: Desired status variable (e.g. Uptime).
+UserParameter=sst.mysql.status[*],/usr/libexec/zabbix-helpers/get-status.sh -s mysql-status -v $1
+
+# MySQL global configuration
+# $1: Desired config variable (e.g. max_connections).
+UserParameter=sst.mysql.config[*],/usr/libexec/zabbix-helpers/get-status.sh -s mysql-config -v $1
