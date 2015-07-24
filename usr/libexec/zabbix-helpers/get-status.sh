@@ -29,38 +29,124 @@
 #
 ################################################################################
 
-# Set option defaults.
-forceGeneration=false
-unset serviceName
-showAll=false
-showDebugMessages=false
-unset valueName
-serviceAvailable=false
-
-# Paths for external commands.
-BASENAME_CMD="/bin/basename"
-CAT_CMD="/bin/cat"
-DIRNAME_CMD="/bin/dirname"
-FIND_CMD="/usr/bin/find"
-HEAD_CMD="/bin/head"
-LS_CMD="/bin/ls"
-READLINK_CMD="/bin/readlink"
-SED_CMD="/bin/sed"
-TAIL_CMD="/bin/tail"
-TOUCH_CMD="/bin/touch"
-
 ##############
-# Main function.
+# Load all necessary functions.
 function main ()
 {
+    # Call the initializeScript function.
+    initializeScript
+    # Call the getOptions function and pass the options.
+    getOptions "${@}"
+    # Call the setService function.
     setService
+    # If the status file must be generated or updated, call the generateStatusFile function.
     if ! checkStatusFile; then
        generateStatusFile
     fi
-    if ${showAll}; then
-        ${CAT_CMD} ${statusFile}
+    # Call the getValue function.
+    getValue
+    # Exit with the global status code.
+    exit "${globalStatusCode}"
+}
+
+##############
+# Initialize the script.
+function initializeScript ()
+{
+    # Set option defaults.
+    globalStatusCode="0"
+    showDebugMessages="false"
+
+    # Paths for external commands.
+    BASENAME_CMD="/bin/basename"
+    BASH_CMD="/bin/bash"
+    CAT_CMD="/bin/cat"
+    COLUMN_CMD="/usr/bin/column"
+    DIRNAME_CMD="/bin/dirname"
+    FIND_CMD="/usr/bin/find"
+    HEAD_CMD="/bin/head"
+    LS_CMD="/bin/ls"
+    READLINK_CMD="/bin/readlink"
+    SED_CMD="/bin/sed"
+    TAIL_CMD="/bin/tail"
+    TIMEOUT_CMD="/usr/bin/timeout"
+    TOUCH_CMD="/bin/touch"
+
+    # Set the path to the script file. Used in the configuration files.
+    scriptFile=$(${READLINK_CMD} -f ${0})
+    scriptPath=$(${DIRNAME_CMD} ${scriptFile})
+
+    # Load the configuration.
+    globalConfFile="${scriptPath}/../../../etc/zabbix-helpers/get-status.conf"
+    source ${globalConfFile}
+    # Check wheater the configuration could be loaded successfully.
+    sourceGlobalConfFileStatusCode=${?}
+    if [ ${sourceGlobalConfFileStatusCode} -ne 0 ]; then
+        echo "Error: Couldn't load the configuration file. Status code: ${sourceGlobalConfFileStatusCode}" >&2
+        exit 1
+    fi
+    ${showDebugMessages} && echo "Info: Configuration file loaded successfully."
+
+    # Get available services.
+    serviceConfList=$(${LS_CMD} ${serviceConfDir}/*.${serviceConfSuff} 2> /dev/null)
+    serviceConfListStatusCode=${?}
+    if [ ${serviceConfListStatusCode} -ne 0 ]; then
+        echo "Error: There is no service available. Status code: ${serviceConfListStatusCode}" >&2
+        exit 1
+    fi
+    ${showDebugMessages} && echo "Info: Looked up available services successfully."
+    for serviceConf in ${serviceConfList}; do
+        availableServiceList+=($(${BASENAME_CMD} -s.conf ${serviceConf}))
+    done
+}
+
+##############
+# Get the options and check them.
+function getOptions ()
+{
+    forceGeneration="false"
+    showAll="false"
+    unset valueName
+    unset serviceName
+
+    # Get the options.
+    while getopts ':s:v:ahdf' option; do
+        case "${option}" in
+            a)
+                showAll=true
+                ;;
+            s)
+                serviceName="${OPTARG}"
+                ;;
+            v)
+                valueName="${OPTARG}"
+                ;;
+            h)
+                showHelp
+                ;;
+            d)
+                showDebugMessages=true
+                ;;
+            f)
+                forceGeneration=true
+                ;;
+            \?)
+                echo -e "Error: Invalid option -${OPTARG}.\n" >&2
+                showHelp "error"
+                ;;
+            :)
+                echo -e "Error: Option -${OPTARG} requires an argument.\n" >&2
+                showHelp "error"
+                ;;
+        esac
+    done
+
+    # Check for required options.
+    if [[ ${serviceName} ]] && ( [[ ${valueName} ]] || ${showAll} ) && ! ( [[ ${valueName} ]] && ${showAll} ); then
+        ${showDebugMessages} && echo "Info: All required options are set."
     else
-        getValue
+        echo -e "Error: Missing or wrongly used option(s).\n" >&2
+        showHelp "error"
     fi
 }
 
@@ -68,91 +154,117 @@ function main ()
 # Check and load service configuration.
 function setService ()
 {
+    # Search for the selected service in the available service list.
     serviceAvailable=false
-
     for availableService in ${availableServiceList[@]}; do
         if [ "${availableService}" == "${serviceName}" ]; then
             serviceAvailable=true
             break
         fi
     done
-
-    serviceConfPath="${serviceConfDir}/${serviceName}.${serviceConfSuff}"
-
-    if ${serviceAvailable}; then
-        source ${serviceConfPath}
-
-        if [ -z "${statusGenerationCommand}" ]; then
-            echo "Error: Missing status generation command." >&2
-            exit 1
-        fi
-
-        statusFile="${statusFileDir}/${statusFileName:-sst.${serviceName}.status}"
-        valuePattern="${valuePattern:-${defaultValuePattern}}"
-        datePattern="${datePattern:-${defaultDatePattern}}"
-
-        ${showDebugMessages} && echo "Info: Using the service \"${serviceName}\"."
-        ${showDebugMessages} && echo "Info: Service description is \"${serviceDescription}\"."
-        ${showDebugMessages} && echo "Info: Using the status file \"${statusFile}\"."
-        ${showDebugMessages} && echo "Info: Using the status generation command \"${statusGenerationCommand}\"."
-        if [[ ${valueName} ]]; then
-            ${showDebugMessages} && echo "Info: Using the value name \"${valueName}\"."
-            ${showDebugMessages} && echo "Info: Using the value pattern \"${valuePattern}\"."
-        fi
-        ${showDebugMessages} && echo "Info: Using the date pattern \"${datePattern}\"."
-
-        # Replace placeholders.
-        valuePattern=$(echo ${valuePattern} | ${SED_CMD} -e "s/%VALUE_NAME%/${valueName}/g" -e "s/%VALUE%/\\\(\.\*\\\)/g")
-        datePattern=$(echo ${datePattern} | ${SED_CMD} -e "s/%VALUE_NAME%/${dateValueName}/g" -e "s/%VALUE%/${dateGenerationCommand}/g")
-    else
+    # Check wheater the selected service is available.
+    if ! ${serviceAvailable}; then
         echo -e "Error: The service \"${serviceName}\" isn't supported.\n" >&2
         showAvailableServices "error"
+    fi
+
+    # Build the service configuration path out of the selected service.
+    serviceConfFile="${serviceConfDir}/${serviceName}.${serviceConfSuff}"
+
+    # Load the service configuration.
+    source ${serviceConfFile}
+    # Check wheater the configuration could be loaded successfully.
+    sourceServiceConfFileStatusCode=${?}
+    if [ ${sourceServiceConfFileStatusCode} -ne 0 ]; then
+        echo "Error: Couldn't load the configuration file. Status code: ${sourceServiceConfFileStatusCode}" >&2
         exit 1
     fi
+    ${showDebugMessages} && echo "Info: Service configuration file loaded successfully."
+
+    # Check wheater the status generation command is defined.
+    if [ -z "${statusGenerationCommand}" ]; then
+        echo "Error: Missing status generation command in configuration file ${serviceConfFile}." >&2
+        exit 1
+    fi
+
+    # Define the values by using the values from the configuration or setting a default.
+    statusFile="${statusFileDir}/${statusFileName:-sst.${serviceName}.status}"
+    valuePattern="${valuePattern:-${defaultValuePattern}}"
+    datePattern="${datePattern:-${defaultDatePattern}}"
+
+    # Print out some informational debug messages.
+    ${showDebugMessages} && echo "Info: Using the service \"${serviceName}\"."
+    ${showDebugMessages} && echo "Info: Service description is \"${serviceDescription}\"."
+    ${showDebugMessages} && echo "Info: Using the status file \"${statusFile}\"."
+    ${showDebugMessages} && echo "Info: Using the status generation command \"${statusGenerationCommand}\"."
+    if [[ ${valueName} ]]; then
+        ${showDebugMessages} && echo "Info: Using the value name \"${valueName}\"."
+        ${showDebugMessages} && echo "Info: Using the value pattern \"${valuePattern}\"."
+    fi
+    ${showDebugMessages} && echo "Info: Using the date pattern \"${datePattern}\"."
+
+    # Substitute the placeholders.
+    valuePattern=$(echo ${valuePattern} | ${SED_CMD} -e "s/%VALUE_NAME%/${valueName}/g" -e "s/%VALUE%/\\\(\.\*\\\)/g")
+    datePattern=$(echo ${datePattern} | ${SED_CMD} -e "s/%VALUE_NAME%/${dateValueName}/g" -e "s/%VALUE%/${dateGenerationCommand}/g")
 }
 
 ##############
 # Check wheater the status file exists and is younger than update interval.
 function checkStatusFile ()
 {
-    if [ -f ${statusFile} ]; then
-        ${showDebugMessages} && echo "Info: The status file exists."
-        if [[ -r ${statusFile} && -w ${statusFile} ]]; then
-            checkStatusFileAge=$(${FIND_CMD} ${statusFile} -mmin +${updateInterval} 2> /dev/null)
-            statusCode=${?}
-            if [ ${statusCode} -eq 0 ]; then
-                ${showDebugMessages} && echo "Info: The status file age check was successful."
-                if [ -z ${checkStatusFileAge} ]; then
-                    ${showDebugMessages} && echo "Info: The status file is younger than ${updateInterval} min."
-                    if ${forceGeneration}; then
-                        ${showDebugMessages} && echo "Info: Force the generation / update of the status file."
-                        return 1
-                    else
-                        return 0
-                    fi
-                else
-                    ${showDebugMessages} && echo "Info: The status file is older than ${updateInterval} min."
-                    return 1
-                fi
-            else
-                ${showDebugMessages} && echo "Error: The status file age check wasn't successful. Status code: ${statusCode}" >&2
-                exit 1
-            fi
-        else
-            ${showDebugMessages} && echo "Error: The status file is not read or writable." >&2
-            exit 1
-        fi
-    else
+    statusFileOk="false"
+
+    # Check wheater the status file exists.
+    if [ ! -f ${statusFile} ]; then
         ${showDebugMessages} && echo "Info: The status file doesn't exist yet."
-        ${TOUCH_CMD} -c ${statusFile} 2> /dev/null
-        statusCode=${?}
-        if [ ${statusCode} -eq 0 ]; then
-            ${showDebugMessages} && echo "Info: The status file can be created."
-            return 1
-        else
-            ${showDebugMessages} && echo "Error: The status file cannot be created."
+        # Check wheater the status file is creatable.
+        ${TOUCH_CMD} ${statusFile} 2> /dev/null
+        testStatusFileStatusCode=${?}
+        if [ ${testStatusFileStatusCode} -ne 0 ]; then
+            echo "Error: The status file cannot be created." >&2
             exit 1
+        else
+            ${showDebugMessages} && echo "Info: The status file can be created."
+            rm ${statusFile} 2> /dev/null
+            return 1
         fi
+    fi
+
+    ${showDebugMessages} && echo "Info: The status file exists."
+
+    # Check wheater the status file is read and writable.
+    if [[ ! -r "${statusFile}" || ! -w "${statusFile}" ]]; then
+        echo "Error: The status file is not read or writable." >&2
+        exit 1
+    fi
+    statusFileOk="true"
+    ${showDebugMessages} && echo "Info: The status file is read and writable."
+
+    # Lookup the age of the status file.
+    checkStatusFileAge=$(${FIND_CMD} ${statusFile} -mmin +${updateInterval} 2> /dev/null)
+    checkStatusFileAgeStatusCode=${?}
+    # Check wheater the status file age lookup was successful.
+    if [ ${checkStatusFileAgeStatusCode} -ne 0 ]; then
+        ${showDebugMessages} && echo "Error: The status file age check wasn't successful. Status code: ${checkStatusFileAgeStatusCode}" >&2
+        globalStatusCode="1"
+    else
+        ${showDebugMessages} && echo "Info: The status file age check was successful."
+    fi
+
+    # If there is a return value, the status file older than update interval and should be updated.
+    if [[ ${checkStatusFileAge} ]]; then
+        ${showDebugMessages} && echo "Info: The status file is older than ${updateInterval} minutes."
+        return 1
+    fi
+
+    ${showDebugMessages} && echo "Info: The status file is younger than ${updateInterval} minutes."
+
+    # Return true regardless of the status file age, if the generation is forced.
+    if ${forceGeneration}; then
+        ${showDebugMessages} && echo "Info: Force the generation / update of the status file."
+        return 1
+    else
+        return 0
     fi
 }
 
@@ -160,36 +272,82 @@ function checkStatusFile ()
 # Generate the status file.
 function generateStatusFile ()
 {
-    # Execute the status generartion command and append the exit status.
-    statusOutput=$(eval "${statusGenerationCommand}; echo \${PIPESTATUS[@]}" 2> /dev/null)
+    # Execute the status generation command and append the exit status.
+    statusOutput=$(${TIMEOUT_CMD} ${statusGenerationTimeout} ${BASH_CMD} -c "${statusGenerationCommand}; echo \${PIPESTATUS[@]}" 2> /dev/null)
+    timeoutStatusCode=${?}
+    # Check weather the timeout command was successful and the timeout has not been reached.
+    if [ ${timeoutStatusCode} -eq 124 ]; then
+        globalStatusCode="1"
+        if ${statusFileOk}; then
+            ${showDebugMessages} && echo "Error: The timeout of ${statusGenerationTimeout} seconds for the status generation command has been reached." >&2
+            return
+        else
+            echo "Error: The timeout of ${statusGenerationTimeout} seconds for the status generation command has been reached." >&2
+            exit "${globalStatusCode}"
+        fi
+    elif [ ${timeoutStatusCode} -ne 0 ]; then
+        globalStatusCode="1"
+        if ${statusFileOk}; then
+            ${showDebugMessages} && echo "Error: The timeout command failed." >&2
+            return
+        else
+            echo "Error: The timeout command failed." >&2
+            exit "${globalStatusCode}"
+        fi
+    fi
+
     # Filter out the exit status.
-    statusCode=$(echo "${statusOutput}" | ${TAIL_CMD} -1)
+    statusOutputStatusCode=$(echo "${statusOutput}" | ${TAIL_CMD} -1)
     # Filter out the status output.
-    statusOutput=$(echo "${statusOutput}" | ${HEAD_CMD} -n -2)
-    # Check if one of the exit status is not 0.
-    for code in ${statusCode}; do
-        if [[ ${code} != 0 ]]; then
-            statusFailed=true
+    statusOutput=$(echo "${statusOutput}" | ${HEAD_CMD} -n -1)
+
+    # Check wheater the status generation command was successful.
+    statusOutputFailed=false
+    for code in ${statusOutputStatusCode}; do
+        if [ ${code} -ne 0 ]; then
+            statusOutputFailed=true
             break
         fi
     done
-    if [ ! ${statusFailed} ]; then
-        ${showDebugMessages} && echo "Info: The status generation command was successful."
-        if [ -z "${statusOutput}" ]; then
-            ${showDebugMessages} && echo "Error: The status generation command produced an empty output."
+    if ${statusOutputFailed}; then
+        globalStatusCode="1"
+        if ${statusFileOk}; then
+            ${showDebugMessages} && echo "Error: The status generation command failed. Status code: ${statusOutputStatusCode}" >&2
+            return
         else
-            # Write down the status output and the date to the status file.
-            printf 2> /dev/null '%b\n' "${statusOutput}" "${datePattern}" > "${statusFile}"
-            statusCode=${?}
-            if [ ${statusCode} -eq 0 ]; then
-                ${showDebugMessages} && echo "Info: The status could be written down successfully."
-            else
-                ${showDebugMessages} && echo "Error: The status couldn't be written down. Status code: ${statusCode}"
-                exit 1
-            fi
+            echo "Error: The status generation command failed. Status code: ${statusOutputStatusCode}" >&2
+            exit "${globalStatusCode}"
+        fi
+    fi
+    ${showDebugMessages} && echo "Info: The status generation command was successful."
+
+    # Check wheater the status output is empty.
+    if [ -z "${statusOutput}" ]; then
+        globalStatusCode="1"
+        if ${statusFileOk}; then
+            ${showDebugMessages} && echo "Error: The status generation command produced an empty output." >&2
+            return
+        else
+            echo "Error: The status generation command produced an empty output." >&2
+            exit "${globalStatusCode}"
+        fi
+    fi
+
+    # Write down the status output and the date to the status file.
+    printf 2> /dev/null '%b\n' "${statusOutput}" "${datePattern}" > "${statusFile}"
+    writeStatusOutputStatusCode=${?}
+    # Check wheater the output could be written down successfully.
+    if [ ${writeStatusOutputStatusCode} -ne 0 ]; then
+        globalStatusCode="1"
+        if ${statusFileOk}; then
+            ${showDebugMessages} && echo "Error: The status couldn't be written down. Status code: ${writeStatusOutputStatusCode}" >&2
+            return
+        else
+            echo "Error: The status couldn't be written down. Status code: ${writeStatusOutputStatusCode}" >&2
+            exit "${globalStatusCode}"
         fi
     else
-        ${showDebugMessages} && echo "Error: The status generation command failed. Status code: ${statusCode}" >&2
+        ${showDebugMessages} && echo "Info: The status could be written down successfully."
     fi
 }
 
@@ -197,136 +355,84 @@ function generateStatusFile ()
 # Get the value.
 function getValue ()
 {
-    returnValue=$(${SED_CMD} -n "s/${valuePattern}/\1/p" ${statusFile} 2> /dev/null)
-    statusCode=${?}
-    if [ ${statusCode} -eq 0 ]; then
-        if [ -z ${returnValue} ]; then
-            ${showDebugMessages} && echo "Error: Value doesn't exist or is empty."
-            exit 1
-        else
-            ${showDebugMessages} && echo "Info: The value could be looked up successfully."
-            echo ${returnValue}
-            exit 0
-        fi
+    # Execute the value lookup commando.
+    if ${showAll}; then
+        returnValue=$(${CAT_CMD} ${statusFile} 2> /dev/null)
     else
-        ${showDebugMessages} && echo "Error: The value lookup commando failed. Status code: ${statusCode}"
+        returnValue=$(${SED_CMD} -n "s/${valuePattern}/\1/p" ${statusFile} 2> /dev/null)
+    fi
+    returnValueStatusCode=${?}
+    # Check wheater the value lookup commando was successful.
+    if [ ${returnValueStatusCode} -ne 0 ]; then
+        echo "Error: The value lookup commando failed. Status code: ${returnValueStatusCode}" >&2
         exit 1
     fi
+
+    # Check wheater the value is empty.
+    if [ -z "${returnValue}" ]; then
+        echo "Error: Value doesn't exist or is empty." >&2
+        exit 1
+    fi
+
+    # Return the value.
+    ${showDebugMessages} && echo "Info: The value could be looked up successfully."
+    echo "${returnValue}"
 }
 
 ##############
 # Show available services.
 function showAvailableServices ()
 {
+    # Set the log destination out of the parameter.
+    logDest="1"
     if [ "${1}" == "error" ]; then
         logDest="2"
-    else
-        logDest="1"
     fi
 
-    echo -e "List of available services:" >&"${logDest}"
+    # Print a list of all available services.
+    echo -e "\nList of available services:" >&"${logDest}"
+    unset availableServiceText
     for availableService in ${availableServiceList[@]}; do
         while read line; do
             if [[ ${line} == serviceDescription=* ]]; then
                 serviceDescription=$(echo ${line} | ${SED_CMD} -n 's/serviceDescription="\(.*\)"/\1/p')
                 break
             fi
+            serviceDescription="No description"
         done < "${serviceConfDir}/${availableService}.${serviceConfSuff}"
-        echo -e "\t- ${availableService} (${serviceDescription})" >&"${logDest}"
+        availableServiceText+="\t- ${availableService}\t${serviceDescription}\n"
     done
+    echo -e "${availableServiceText}" | ${COLUMN_CMD} -t -s $'\t' >&"${logDest}"
+
+    # Exit correspondingly.
+    if [ "${logDest}" -eq 2 ]; then
+        exit 1
+    fi
+    exit "${globalStatusCode}"
 }
 
 ##############
 # Show the help text.
 function showHelp ()
 {
+    # Set the log destination out of the parameter.
+    logDest="1"
     if [ "${1}" == "error" ]; then
         logDest="2"
-    else
-        logDest="1"
     fi
 
-    echo -e "Usage: $(${BASENAME_CMD} ${0}) [-d] [-f] -s <SERVICE> -v <VALUE NAME> | -a\n" \
-    "\t-d\t\tDebug mode\n" \
-    "\t-f\t\tForce generation / update of the status\n" \
-    "\t-h\t\tShow this help text\n" \
+    # Print a help text.
+    echo "Usage: $(${BASENAME_CMD} ${0}) [-d] [-f] -s <SERVICE> -v <VALUE NAME> | -a" >&"${logDest}"
+    echo -e "\t-d\tDebug mode\n" \
+    "\t-f\tForce generation / update of the status\n" \
+    "\t-h\tShow this help text\n" \
     "\t-s <SERVICE>\tThe service which should be used\n" \
     "\t-v <VALUE NAME>\tThe name of the value which should be returned\n" \
-    "\t-a\t\tPrint the entire status file\n" >&"${logDest}"
+    "\t-a\tPrint the entire status file\n" | ${COLUMN_CMD} -t -s $'\t' >&"${logDest}"
 
+    # Print the available services.
     showAvailableServices "${1}"
 }
 
-# Get options.
-while getopts ':s:v:ahdf' option; do
-    case "$option" in
-        a)
-            showAll=true
-            ;;
-        s)
-            serviceName="${OPTARG}"
-            ;;
-        v)
-            valueName="${OPTARG}"
-            ;;
-        h)
-            showHelp
-            exit 0
-            ;;
-        d)
-            showDebugMessages=true
-            ;;
-        f)
-            forceGeneration=true
-            ;;
-        \?)
-            echo -e "Error: Invalid option -$OPTARG.\n" >&2
-            showHelp "error"
-            exit 1
-            ;;
-        :)
-            echo -e "Error: Option -$OPTARG requires an argument.\n" >&2
-            showHelp "error"
-            exit 1
-            ;;
-    esac
-done
-
-# Check for required options.
-if [[ ${serviceName} ]] && ( [[ ${valueName} ]] || ${showAll} ) && ! ( [[ ${valueName} ]] && ${showAll} ); then
-    # Set the path to the script file. Used in the configuration files.
-    scriptFile=$(${READLINK_CMD} -f ${0})
-    scriptPath=$(${DIRNAME_CMD} ${scriptFile})
-
-    # Load the configuration.
-    confFile="${scriptPath}/../../../etc/zabbix-helpers/get-status.conf"
-    source ${confFile}
-    statusCode=${?}
-    if [ ${statusCode} -eq 0 ]; then
-        ${showDebugMessages} && echo "Info: Configuration file loaded successfully."
-    else
-        ${showDebugMessages} && echo "Error: Couldn't load the configuration file. Status code: ${statusCode}" >&2
-        exit 1
-    fi
- 
-    # Get available services.
-    serviceConfList=$(${LS_CMD} ${serviceConfDir}/*.${serviceConfSuff} 2> /dev/null)
-    statusCode=${?}
-    if [ ${statusCode} -eq 0 ]; then
-        ${showDebugMessages} && echo "Info: Looked up available services successfully."
-    else
-        ${showDebugMessages} && echo "Error: There is no service available. Status code: ${statusCode}" >&2
-        exit 1
-    fi
-    for serviceConf in ${serviceConfList}; do
-        availableServiceList+=($(${BASENAME_CMD} -s.conf ${serviceConf}))
-    done
-
-    # Call the main function.
-    main
-else
-    echo -e "Error: Missing or wrongly used option(s).\n" >&2
-    # Call the showHelp function and exit.
-    showHelp "error"
-    exit 1
-fi
+# Call the main function and pass the options.
+main "${@}"
