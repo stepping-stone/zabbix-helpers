@@ -25,7 +25,7 @@ mysqlUserPass=
 mysqlUserHost="%"
 
 # Create the MySQL user.
-mysql -u root -p -e "GRANT PROCESS ON *.* TO '${mysqlUser}'@'${mysqlUserHost}' IDENTIFIED BY '${mysqlUserPass}'
+mysql -u root -p -e "GRANT PROCESS ON *.* TO '${mysqlUser}'@'${mysqlUserHost}' IDENTIFIED BY '${mysqlUserPass}'"
 
 # Store the credentials.
 cat << EOF > /var/lib/zabbix/home/.my.cnf
@@ -60,14 +60,14 @@ mysqlUserHost="%"
 
 # Create the database and the user.
 mysql -u root -p << EOF_SQL
-CREATE DATABASE `alivecheck` CHARACTER SET utf8;
-USE `alivecheck`;
+CREATE DATABASE \`alivecheck\` CHARACTER SET utf8;
+USE \`alivecheck\`;
 CREATE TABLE IF NOT EXISTS `alivecheck`
         ( id  INT PRIMARY KEY NOT NULL AUTO_INCREMENT
         , hostname  VARCHAR(128) NOT NULL
         , date  DATETIME NOT NULL
         );
-GRANT SELECT, INSERT, DELETE ON `alivecheck`.`alivecheck` TO \`${mysqlUser}\`@\`${mysqlUserHost}\` IDENTIFIED BY "${mysqlUserPass}"
+GRANT SELECT, INSERT, DELETE ON \`alivecheck\`.\`alivecheck\` TO \`${mysqlUser}\`@\`${mysqlUserHost}\` IDENTIFIED BY "${mysqlUserPass}"
 EOF_SQL
 
 # Store the credentials.
@@ -97,14 +97,14 @@ mysqlUserPass=
 mysqlUserHost="%"
 
 mysql -u root -p << EOF_SQL
-CREATE DATABASE `healthcheck` CHARACTER SET utf8;
-USE `healthcheck`;
-CREATE TABLE IF NOT EXISTS `healthcheck`
+CREATE DATABASE \`healthcheck\` CHARACTER SET utf8;
+USE \`healthcheck\`;
+CREATE TABLE IF NOT EXISTS \`healthcheck\`
         ( id  INT PRIMARY KEY NOT NULL AUTO_INCREMENT
         , hostname  VARCHAR(128) NOT NULL
         , date  DATETIME NOT NULL
         );
-GRANT SELECT, INSERT, UPDATE, DELETE ON `healthcheck`.`healthcheck` TO \`${mysqlUser}\`@\`${mysqlUserHost}\` IDENTIFIED BY "${mysqlUserPass}";
+GRANT SELECT, INSERT, UPDATE, DELETE ON \`healthcheck\`.\`healthcheck\` TO \`${mysqlUser}\`@\`${mysqlUserHost}\` IDENTIFIED BY "${mysqlUserPass}";
 EOF_SQL
 ```
 * Adjust the config file. 
