@@ -1,4 +1,0 @@
-##
-## get-status.sh command alias specifications
-##
-Cmnd_Alias GET_STATUS = /usr/libexec/zabbix-helpers/get-status.sh -s haproxy-status -v*, /usr/libexec/zabbix-helpers/get-status.sh -s haproxy-state -v*

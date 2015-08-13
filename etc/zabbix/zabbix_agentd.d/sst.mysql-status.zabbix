@@ -1,0 +1,3 @@
+# MySQL global status
+# $1: Desired status variable (e.g. Uptime).
+UserParameter=sst.mysql.status[*],/usr/libexec/zabbix-helpers/get-status.sh -s mysql-status -v $1
