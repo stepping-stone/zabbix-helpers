@@ -1,4 +1,0 @@
-##
-## Zabbix user privilege specifications for GET_STATUS
-##
-zabbix ALL=NOPASSWD: GET_STATUS
