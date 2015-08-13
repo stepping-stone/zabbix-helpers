@@ -101,7 +101,7 @@ CREATE DATABASE `healthcheck` CHARACTER SET utf8;
 USE `healthcheck`;
 CREATE TABLE IF NOT EXISTS `healthcheck`
         ( id  INT PRIMARY KEY NOT NULL AUTO_INCREMENT
-        , fqdn  VARCHAR(128) NOT NULL
+        , hostname  VARCHAR(128) NOT NULL
         , date  DATETIME NOT NULL
         );
 GRANT SELECT, INSERT, UPDATE, DELETE ON `healthcheck`.`healthcheck` TO \`${mysqlUser}\`@\`${mysqlUserHost}\` IDENTIFIED BY "${mysqlUserPass}";
