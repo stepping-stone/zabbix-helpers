@@ -62,7 +62,7 @@ mysqlUserHost="%"
 mysql -u root -p << EOF_SQL
 CREATE DATABASE \`alivecheck\` CHARACTER SET utf8;
 USE \`alivecheck\`;
-CREATE TABLE IF NOT EXISTS `alivecheck`
+CREATE TABLE IF NOT EXISTS \`alivecheck\`
         ( id  INT PRIMARY KEY NOT NULL AUTO_INCREMENT
         , hostname  VARCHAR(128) NOT NULL
         , date  DATETIME NOT NULL
