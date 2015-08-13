@@ -31,13 +31,13 @@
 
 error_reporting(E_ALL);
 
-class MySQLCheck {
-	private $cfg, $fqdn, $date;
+class HealthCheckMysql {
+	private $cfg, $hostname, $date;
 	private $mysqli = null, $insert_id = -1;
 
 	public function __construct($cfg) {
 		$this->cfg = $cfg;
-		$this->fqdn = gethostname();
+		$this->hostname = gethostname();
 		$this->date = date('Y-m-d H:i:s');
 
 		set_error_handler(array($this, 'error_handler'), E_ALL);
@@ -61,7 +61,7 @@ class MySQLCheck {
 	}
 
 	private function db_write() {
-		$query = "INSERT INTO `{$this->cfg['db_table']}` (fqdn, date) VALUES ('{$this->fqdn}', '{$this->date}');";
+		$query = "INSERT INTO `{$this->cfg['db_table']}` (hostname, date) VALUES ('{$this->hostname}', '{$this->date}');";
 
 		if (($result = $this->mysqli->query($query)) == FALSE)
 			$this->error('Query failed: %s (%d)', $this->mysqli->error, $this->mysqli->errno);
@@ -70,21 +70,21 @@ class MySQLCheck {
 	}
 
 	private function db_read() {
-		$query = "SELECT fqdn, date FROM `{$this->cfg['db_table']}` WHERE id = {$this->insert_id}";
+		$query = "SELECT hostname, date FROM `{$this->cfg['db_table']}` WHERE id = {$this->insert_id}";
 
 		if (($result = $this->mysqli->query($query)) == false)
 			$this->error('Query failed: %s (%d)', $this->mysqli->error, $this->mysqli->errno);
 
 		$line = $result->fetch_assoc();
 
-		if (!array_key_exists('fqdn', $line) || !array_key_exists('date', $line))
+		if (!array_key_exists('hostname', $line) || !array_key_exists('date', $line))
 			$this->error('Select query returned an invalid result (keys missing).');
 
-		if ($line['fqdn'] != $this->fqdn)
-			$this->error('FQDN: expected "%s", got "%s".', $this->fqdn, $line['fqdn']);
+		if ($line['hostname'] != $this->hostname)
+			$this->error('Hostname: expected "%s", got "%s".', $this->hostname, $line['hostname']);
 
 		if ($line['date'] != $this->date)
-			$this->error('Date: expected "%s", got "%s".', $this->fqdn, $line['host']);
+			$this->error('Date: expected "%s", got "%s".', $this->hostname, $line['host']);
 
 		$result->close();
 	}
@@ -136,8 +136,8 @@ class MySQLCheck {
 	}
 }
 
-require_once(dirname(__FILE__) . '../../../etc/zabbix-helpers/mysqlcheck.conf');
+require_once(dirname(__FILE__) . '../../../etc/zabbix-helpers/healthcheck-mysql.conf');
 
-$hc = new MySQLCheck($_CONFIG);
+$hc = new HealthCheckMysql($_CONFIG);
 $hc->run();
 ?>
