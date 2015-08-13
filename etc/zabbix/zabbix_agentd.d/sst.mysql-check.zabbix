@@ -1,0 +1,2 @@
+# MySQL alive check
+UserParameter=sst.mysql.check,/usr/libexec/zabbix-helpers/alivecheck-mysql.sh
