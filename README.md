@@ -22,7 +22,7 @@ mysqlUser=zabbix
 # The MySQL user password.
 mysqlUserPass=
 # The MySQL user host.
-mysqlUserHost=localhost
+mysqlUserHost="%"
 
 # Create the MySQL user.
 mysql -u root -p -e "GRANT PROCESS ON *.* TO '${mysqlUser}'@'${mysqlUserHost}' IDENTIFIED BY '${mysqlUserPass}'
