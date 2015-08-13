@@ -447,13 +447,13 @@ function showAvailableServices ()
         done < "${serviceConfDir}/${availableService}.${serviceConfSuff}"
         while read line; do
             if [[ ${line} == serviceOptions=* ]]; then
-                serviceOptions=$(echo ${line} | ${SED_CMD} -n 's/serviceOptions="\(.*\)"/\1/p')
+                serviceOptionsAvailable=$(echo ${line} | ${SED_CMD} -n 's/serviceOptionsAvailable="\(.*\)"/\1/p')
                 break
             fi
-            unset serviceOptions
+            unset serviceOptionsAvailable
         done < "${serviceConfDir}/${availableService}.${serviceConfSuff}"
         if ${serviceOptionsRequired}; then
-            availableServiceText+="\t- ${availableService}\t${serviceDescription}\t(This service requires additional options: ${serviceOptions})\n"
+            availableServiceText+="\t- ${availableService}\t${serviceDescription}\t(This service requires additional options: ${serviceOptionsAvailable})\n"
         else
             availableServiceText+="\t- ${availableService}\t${serviceDescription}\t\n"
         fi
