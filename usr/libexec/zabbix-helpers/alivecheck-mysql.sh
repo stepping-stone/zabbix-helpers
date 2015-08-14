@@ -61,7 +61,6 @@ function main ()
     else
         echo "0"
     fi
-    dbCleanup
 }
 
 # Write to the database
@@ -93,5 +92,6 @@ function dbCleanup ()
 DELETE FROM \`${dbTable}\` WHERE hostname="${hostname}" AND date="${date}"
 EOF_SQL
 }
+trap dbCleanup EXIT
 
 main
