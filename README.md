@@ -103,6 +103,8 @@ CREATE TABLE IF NOT EXISTS \`healthcheck\`
         ( id  INT PRIMARY KEY NOT NULL AUTO_INCREMENT
         , hostname  VARCHAR(128) NOT NULL
         , date  DATETIME NOT NULL
+        , src_ip_addr VARCHAR(45) NOT NULL
+        , app_name VARCHAR(32) NOT NULL
         );
 GRANT SELECT, INSERT, UPDATE, DELETE ON \`healthcheck\`.\`healthcheck\` TO \`${mysqlUser}\`@\`${mysqlUserHost}\` IDENTIFIED BY "${mysqlUserPass}";
 EOF_SQL
