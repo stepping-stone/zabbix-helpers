@@ -33,19 +33,27 @@ error_reporting(0);
 date_default_timezone_set('Europe/Zurich');
 
 class HealthCheckMysql {
-	private $cfg, $hostname, $date;
+	private $cfg, $hostname, $date, $src_ip_addr, $app_name;
 	private $disable_shutdown_function = false, $mysqli = null, $insert_id = -1;
 
 	public function __construct($cfg) {
-		$this->cfg = $cfg;
-		$this->hostname = gethostname();
-		$this->date = date('Y-m-d H:i:s');
+		$this->cfg		= $cfg;
+		$this->hostname		= gethostname();
+		$this->date		= date('Y-m-d H:i:s');
+		$this->src_ip_addr	= array_key_exists('REMOTE_ADDR', $_SERVER) ? $_SERVER['REMOTE_ADDR'] : '0.0.0.0';
+		$this->app_name		= array_key_exists('app', $_GET) ? $_GET['app'] : 'default';
 
 		set_error_handler(array($this, 'error_handler'), E_ALL);
 		register_shutdown_function(array($this, 'error_handler'));
 
 		if (openlog($this->cfg['syslog_ident'], $this->cfg['syslog_options'], $this->cfg['syslog_facility']) != true)
 			$this->error('unable to open a connection to syslog');
+
+		if (!preg_match('/^([0-9]+\.){3}[0-9]+$/', $this->src_ip_addr) || strlen($this->src_ip_addr) > 45)
+			$this->error('Source IP address contains invalid characters or is too long.');
+
+		if (!preg_match('/^[a-zA-Z0-9._-]+$/', $this->app_name) || strlen($this->app_name) > 32)
+			$this->error('Application name contains invalid characters or is too long.');
 
 		$this->mysqli = new mysqli($this->cfg['db_host'], $this->cfg['db_user'], $this->cfg['db_password'], $this->cfg['db_database'], $this->cfg['db_port']);
 
@@ -63,7 +71,7 @@ class HealthCheckMysql {
 	}
 
 	private function db_write() {
-		$query = "INSERT INTO `{$this->cfg['db_table']}` (hostname, date) VALUES ('{$this->hostname}', '{$this->date}');";
+		$query = "INSERT INTO `{$this->cfg['db_table']}` (hostname, date, src_ip_addr, app_name) VALUES ('{$this->hostname}', '{$this->date}', '{$this->src_ip_addr}', '{$this->app_name}');";
 
 		if (($result = $this->mysqli->query($query)) == FALSE)
 			$this->error('Query failed: %s (%d)', $this->mysqli->error, $this->mysqli->errno);
@@ -72,21 +80,27 @@ class HealthCheckMysql {
 	}
 
 	private function db_read() {
-		$query = "SELECT hostname, date FROM `{$this->cfg['db_table']}` WHERE id = {$this->insert_id}";
+		$query = "SELECT hostname, date, src_ip_addr, app_name FROM `{$this->cfg['db_table']}` WHERE id = {$this->insert_id}";
 
 		if (($result = $this->mysqli->query($query)) == false)
 			$this->error('Query failed: %s (%d)', $this->mysqli->error, $this->mysqli->errno);
 
 		$line = $result->fetch_assoc();
 
-		if (!array_key_exists('hostname', $line) || !array_key_exists('date', $line))
-			$this->error('Select query returned an invalid result (keys missing).');
+		if (!array_key_exists('hostname', $line) || !array_key_exists('date', $line) || !array_key_exists('src_ip_addr', $line) || !array_key_exists('app_name', $line))
+			$this->error('Select query returned an invalid result, key(s) missing.');
 
 		if ($line['hostname'] != $this->hostname)
 			$this->error('Hostname: expected "%s", got "%s".', $this->hostname, $line['hostname']);
 
 		if ($line['date'] != $this->date)
 			$this->error('Date: expected "%s", got "%s".', $this->hostname, $line['host']);
+
+		if ($line['src_ip_addr'] != $this->src_ip_addr)
+			$this->error('Source IP address: expected "%s", got "%s".', $this->src_ip_addr, $line['src_ip_addr']);
+
+		if ($line['app_name'] != $this->app_name)
+			$this->error('Application name: expected "%s", got "%s".', $this->app_name, $line['app_name']);
 
 		$result->close();
 	}
