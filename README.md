@@ -14,7 +14,7 @@ Services: `/etc/zabbix-helpers/get-status.d/*.conf`
 #####mysql
 ######mysql - Requirements
 * MySQL Client
-* MySQL option file:
+* MySQL user, database option file:
 Create a dedicated MySQL user for the Zabbix Agent and store the credentials in a MySQL option file:
 ```bash
 # The MySQL user.
@@ -47,7 +47,7 @@ Script: `/usr/libexec/zabbix-helpers/alivecheck-mysql.sh`
 Config: `/etc/zabbix-helpers/alivecheck-mysql.conf`
 
 ####alivecheck-mysql.sh - Requirements
-* MySQL Client
+* MySQL
 * MySQL user, database and option file:
 Create a dedicated MySQL user for the Zabbix Agent and store the credentials in a MySQL option file, create the database:
 ```bash
@@ -86,8 +86,8 @@ Config: `/etc/zabbix-helpers/healthcheck-mysql.conf`
 
 ####healthcheck-mysql.php - Requirements
 * PHP
+* MySQL
 * Create the database and table:
-
 ```bash
 # The MySQL user.
 mysqlUser="healthcheck"
@@ -107,4 +107,19 @@ CREATE TABLE IF NOT EXISTS \`healthcheck\`
 GRANT SELECT, INSERT, UPDATE, DELETE ON \`healthcheck\`.\`healthcheck\` TO \`${mysqlUser}\`@\`${mysqlUserHost}\` IDENTIFIED BY "${mysqlUserPass}";
 EOF_SQL
 ```
-* Adjust the config file. 
+* Adjust the config file.
+
+####healthcheck-mysql.php - Usage
+* Integrate the healthcheck into your Apache virtual host by adding the following to your config file (PHP must be enabled):
+```apache
+    Alias "/healthcheck" "/usr/share/zabbix-helpers/healthcheck-mysql.php"
+    <Directory "/usr/share/zabbix-helpers">
+        Require all granted
+    </Directory>
+```
+You may want to restrict the access (replace the Require from above):
+```apache
+        Require ip <SomeIPs>
+        ...
+        Require local
+```
