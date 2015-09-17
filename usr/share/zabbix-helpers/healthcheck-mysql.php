@@ -136,7 +136,7 @@ class HealthCheckMysql {
 	}
 }
 
-require_once(dirname(__FILE__) . '../../../etc/zabbix-helpers/healthcheck-mysql.conf');
+require_once(dirname(__FILE__) . '/../../../etc/zabbix-helpers/healthcheck-mysql.conf');
 
 $hc = new HealthCheckMysql($_CONFIG);
 $hc->run();
