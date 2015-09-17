@@ -29,12 +29,12 @@
  *
  */
 
-error_reporting(E_ALL);
+error_reporting(0);
 date_default_timezone_set('Europe/Zurich');
 
 class HealthCheckMysql {
 	private $cfg, $hostname, $date;
-	private $mysqli = null, $insert_id = -1;
+	private $disable_shutdown_function = false, $mysqli = null, $insert_id = -1;
 
 	public function __construct($cfg) {
 		$this->cfg = $cfg;
@@ -42,6 +42,7 @@ class HealthCheckMysql {
 		$this->date = date('Y-m-d H:i:s');
 
 		set_error_handler(array($this, 'error_handler'), E_ALL);
+		register_shutdown_function(array($this, 'error_handler'));
 
 		if (openlog($this->cfg['syslog_ident'], $this->cfg['syslog_options'], $this->cfg['syslog_facility']) != true)
 			$this->error('unable to open a connection to syslog');
@@ -93,6 +94,8 @@ class HealthCheckMysql {
 	private function cleanup() {
 		// Ignore any errors during cleanup.
 
+		$this->disable_shutdown_function = true;
+
 		if ($this->mysqli) {
 			if ($this->insert_id >= 0)
 				$this->mysqli->query("DELETE FROM `{$this->cfg['db_table']}` WHERE id = {$this->insert_id}");
@@ -103,8 +106,22 @@ class HealthCheckMysql {
 		closelog();
 	}
 
-	private function error_handler($errno, $errstr, $errfile, $errline, $errctx) {
-		$this->error('PHP error %d on line %d in file %s: %s', $errno, $errline, $errfile, $errstr);
+	private function error_handler() {
+		static $errors = array
+			( E_ERROR	=> 'Fatal error'
+			, E_WARNING	=> 'Warning'
+			, E_PARSE	=> 'Parse error'
+			, E_NOTICE	=> 'Notice'
+			);
+
+		if ($this->disable_shutdown_function)
+			return;
+
+		if (($error = error_get_last()) != null) {
+			$this->error('PHP %s (type %d) on line %d in file %s: %s'
+				, array_key_exists($error['type'], $errors) ? $errors[$error['type']] : 'Error'
+				, $error['type'], $error['line'], $error['file'], $error['message']);
+		}
 	}
 
 	private function error() {
@@ -118,16 +135,18 @@ class HealthCheckMysql {
 	}
 
 	private function httpResponse($code = 200, $msg = null) {
-		$responses = array
+		static $responses = array
 			( 200 => 'OK'
 			, 500 => 'Internal Server Error'
 			);
 
 		$response = array_key_exists($code, $responses) ? $responses[$code] : 'Unknown';
 
-		header("HTTP/1.0 $code $response\r\n");
-		header("Content-type: text/html; charset=utf-8\r\n");
-		header("Conection: close\r\n\r\n");
+		if (!headers_sent()) {
+			header("HTTP/1.0 $code $response");
+			header('Content-type: text/html; charset=utf-8');
+			header('Conection: close');
+		}
 
 		printf	( '<html><head><title>%1$d %2$s</title></head><body><h1>%1$d %2$s</h1>%3$s</body></html>' . "\n"
 			, $code
