@@ -32,6 +32,7 @@
 # Return values:
 # 0 = Service is down
 # 1 = Service is up
+# 2 = Timeout reached
 #
 # Usage:
 # alivecheck-mysql.sh
@@ -50,6 +51,8 @@ MYSQL_CMD="/usr/bin/mysql"
 date=$(${DATE_CMD} +"%Y%m%d%H%M%S")
 hostname=$(${HOSTNAME_CMD})
 
+returnValue=0
+
 # Main function
 #
 # main
@@ -57,11 +60,8 @@ function main ()
 {
     dbWrite
     if dbRead > /dev/null && [ "$(dbRead)" ]; then
-        echo "1"
-    else
-        echo "0"
+        returnValue=1
     fi
-    dbCleanup
 }
 
 # Write to the database
@@ -69,9 +69,9 @@ function main ()
 # dbWrite
 function dbWrite ()
 {
-    ${MYSQL_CMD} -u ${dbUser} ${dbName} --connect-timeout=${mysqlTimeout} << EOF_SQL > /dev/null 2>&1
-INSERT INTO \`${dbTable}\` (hostname, date) VALUES ("${hostname}", "${date}")
-EOF_SQL
+    ${MYSQL_CMD} -u ${dbUser} ${dbName} --connect-timeout=${mysqlTimeout} \
+    -e "INSERT INTO \`${dbTable}\` (hostname,date) VALUES ('${hostname}','${date}')" \
+    > /dev/null 2>&1
 }
 
 # Read from the database
@@ -79,9 +79,9 @@ EOF_SQL
 # dbRead
 function dbRead ()
 {
-    ${MYSQL_CMD} -u ${dbUser} ${dbName} --connect-timeout=${mysqlTimeout} << EOF_SQL 2> /dev/null
-SELECT hostname, date FROM \`${dbTable}\` WHERE hostname="${hostname}" AND date="${date}"
-EOF_SQL
+    ${MYSQL_CMD} -u ${dbUser} ${dbName} --connect-timeout=${mysqlTimeout} \
+    -e "SELECT hostname,date FROM \`${dbTable}\` WHERE hostname='${hostname}' AND date='${date}'" \
+    2> /dev/null
 }
 
 # Cleanup the database
@@ -89,9 +89,12 @@ EOF_SQL
 # dbCleanup
 function dbCleanup ()
 {
-    ${MYSQL_CMD} -u ${dbUser} ${dbName} --connect-timeout=${mysqlTimeout} << EOF_SQL 2> /dev/null 2>&1
-DELETE FROM \`${dbTable}\` WHERE hostname="${hostname}" AND date="${date}"
-EOF_SQL
+    ${MYSQL_CMD} -u ${dbUser} ${dbName} --connect-timeout=${mysqlTimeout} \
+    -e "DELETE FROM \`${dbTable}\` WHERE hostname='${hostname}' AND date='${date}'" \
+    > /dev/null 2>&1
 }
+trap "echo \${returnValue}; dbCleanup" EXIT
+
+trap "returnValue=2; exit 1" SIGHUP
 
 main
