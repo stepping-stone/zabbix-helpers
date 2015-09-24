@@ -120,7 +120,7 @@ class HealthCheckMysql {
 		closelog();
 	}
 
-	private function error_handler() {
+	public function error_handler() {
 		static $errors = array
 			( E_ERROR	=> 'Fatal error'
 			, E_WARNING	=> 'Warning'
