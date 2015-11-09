@@ -119,6 +119,11 @@ EOF_SQL
         Require all granted
     </Directory>
 ```
+You may want to specify an application name - especially on a server with multiple healthchecks (add above the Alias):
+```apache
+    RewriteEngine on
+    RewriteRule ^/healthcheck$ /healthcheck?app=<ApplicationName> [PT]
+```
 You may want to restrict the access (replace the Require from above):
 ```apache
         Require ip <SomeIPs>
