@@ -29,9 +29,6 @@
  *
  */
 
-error_reporting(0);
-date_default_timezone_set('Europe/Zurich');
-
 class HealthCheckMysql {
 	private $cfg, $hostname, $date, $src_ip_addr, $app_name;
 	private $disable_shutdown_function = false, $mysqli = null, $insert_id = -1;
@@ -170,7 +167,12 @@ class HealthCheckMysql {
 	}
 }
 
+error_reporting(E_ALL);
+ini_set('display_errors',1);
+date_default_timezone_set('Europe/Zurich');
 require_once(dirname(__FILE__) . '/../../../etc/zabbix-helpers/healthcheck-mysql.conf');
+error_reporting(0);
+ini_set('display_errors',0);
 
 $hc = new HealthCheckMysql($_CONFIG);
 $hc->run();

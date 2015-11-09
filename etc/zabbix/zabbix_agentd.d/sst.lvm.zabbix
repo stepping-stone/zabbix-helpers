@@ -1,0 +1,17 @@
+# Linux Logical Volume Management (LVM)
+# 
+#
+# Get information  about logical volumes, see man 8 lvs. All units are in Bytes
+# $1: Logical volume path, for example "vg-example-01/lv-example-01"
+# $2: Option to display (see lvs -o help)
+UserParameter=sst.lvm.lvs[*],/usr/bin/sudo /sbin/lvs --noheadings --nosuffix --units b --options '$2' '$1' | /usr/bin/tr -d '[[:space:]]'
+
+# Get information  about volume groups, see man 8 vgs. All units are in Bytes
+# $1: Volume group name, for example "vg-example-01"
+# $2: Option to display (see vgs -o help)
+UserParameter=sst.lvm.vgs[*],/usr/bin/sudo /sbin/vgs --noheadings --nosuffix --units b --options '$2' '$1' | /usr/bin/tr -d '[[:space:]]'
+
+# Get information  about physical volumes, see man 8 pvs. All units are in Bytes
+# $1: Physical volume name, for example "/dev/sda"
+# $2: Option to display (see pvs -o help)
+UserParameter=sst.lvm.pvs[*],/usr/bin/sudo /sbin/pvs --noheadings --nosuffix --units b --options '$2' '$1' | /usr/bin/tr -d '[[:space:]]'
