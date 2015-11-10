@@ -31,7 +31,7 @@
 
 class HealthCheckMysql {
 	private $cfg, $hostname, $date, $src_ip_addr, $app_name;
-	private $disable_shutdown_function = false, $mysqli = null, $insert_id = -1;
+	private $mysqli = null, $insert_id = -1;
 
 	public function __construct($cfg) {
 		$this->cfg		= $cfg;
@@ -40,8 +40,10 @@ class HealthCheckMysql {
 		$this->src_ip_addr	= array_key_exists('REMOTE_ADDR', $_SERVER) ? $_SERVER['REMOTE_ADDR'] : '0.0.0.0';
 		$this->app_name		= array_key_exists('app', $_GET) ? $_GET['app'] : 'default';
 
+		error_reporting(0);
+		ini_set('display_errors', 0);
 		set_error_handler(array($this, 'error_handler'), E_ALL);
-		register_shutdown_function(array($this, 'error_handler'));
+		register_shutdown_function(array($this, 'shutdown'));
 
 		if (openlog($this->cfg['syslog_ident'], $this->cfg['syslog_options'], $this->cfg['syslog_facility']) != true)
 			$this->error('unable to open a connection to syslog');
@@ -52,7 +54,18 @@ class HealthCheckMysql {
 		if (!preg_match('/^[a-zA-Z0-9._-]+$/', $this->app_name) || strlen($this->app_name) > 32)
 			$this->error('Application name contains invalid characters or is too long.');
 
-		$this->mysqli = new mysqli($this->cfg['db_host'], $this->cfg['db_user'], $this->cfg['db_password'], $this->cfg['db_database'], $this->cfg['db_port']);
+		$this->mysqli = new mysqli();
+		$this->mysqli->init();
+
+		$this->mysqli->options(MYSQLI_OPT_CONNECT_TIMEOUT, $this->cfg['connection_timeout']);
+
+		if ($this->cfg['ssl']) {
+			$this->mysqli->options(MYSQLI_OPT_SSL_VERIFY_SERVER_CERT, true);
+			$this->mysqli->ssl_set($this->cfg['ssl_key'], $this->cfg['ssl_cert'], $this->cfg['ssl_ca'], $this->cfg['ssl_capath'], $this->cfg['ssl_cipher']);
+		}
+
+		$this->mysqli->real_connect($this->cfg['db_host'], $this->cfg['db_user'], $this->cfg['db_password'], $this->cfg['db_database'], $this->cfg['db_port']
+			, null, $this->cfg['ssl'] ? MYSQLI_CLIENT_SSL : 0);
 
 		if ($this->mysqli->connect_errno)
 			$this->error('could not connect to database (%s): %s (%d)', $this->cfg['db_host'], $this->mysqli->connect_error, $this->mysqli->connect_errno);
@@ -103,10 +116,6 @@ class HealthCheckMysql {
 	}
 
 	private function cleanup() {
-		// Ignore any errors during cleanup.
-
-		$this->disable_shutdown_function = true;
-
 		if ($this->mysqli) {
 			if ($this->insert_id >= 0)
 				$this->mysqli->query("DELETE FROM `{$this->cfg['db_table']}` WHERE id = {$this->insert_id}");
@@ -117,7 +126,7 @@ class HealthCheckMysql {
 		closelog();
 	}
 
-	public function error_handler() {
+	public function error_handler($errno, $errstr, $errfile, $errline) {
 		static $errors = array
 			( E_ERROR	=> 'Fatal error'
 			, E_WARNING	=> 'Warning'
@@ -125,14 +134,16 @@ class HealthCheckMysql {
 			, E_NOTICE	=> 'Notice'
 			);
 
-		if ($this->disable_shutdown_function)
-			return;
+		$this->error('PHP %s (type %d) on line %d in file %s: %s'
+			, array_key_exists($errno, $errors) ? $errors[$errno] : 'Error'
+			, $errno, $errline, $errfile, $errstr);
+	}
 
-		if (($error = error_get_last()) != null) {
-			$this->error('PHP %s (type %d) on line %d in file %s: %s'
-				, array_key_exists($error['type'], $errors) ? $errors[$error['type']] : 'Error'
-				, $error['type'], $error['line'], $error['file'], $error['message']);
-		}
+	public function shutdown() {
+		$error = error_get_last();
+
+		if ($error !== null && $error['type'] === E_ERROR)
+			$this->error_handler($error['type'], $error['message'], $error['file'], $error['line']);
 	}
 
 	private function error() {
@@ -171,8 +182,6 @@ error_reporting(E_ALL);
 ini_set('display_errors',1);
 date_default_timezone_set('Europe/Zurich');
 require_once(dirname(__FILE__) . '/../../../etc/zabbix-helpers/healthcheck-mysql.conf');
-error_reporting(0);
-ini_set('display_errors',0);
 
 $hc = new HealthCheckMysql($_CONFIG);
 $hc->run();
