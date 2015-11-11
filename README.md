@@ -1,14 +1,14 @@
-#Monitoring Helpers
+#Zabbix Helpers
 ##Overview
-Monitoring helper scripts, mainly for Zabbix.
+Zabbix helper scripts, mainly for Zabbix.
 
 ##Scripts
 ###get-status.sh
-Script: `/usr/libexec/sst-monitoring-helpers/get-status.sh`
+Script: `/usr/libexec/zabbix-helpers/get-status.sh`
 
-Config: `/etc/sst-monitoring-helpers/get-status.conf`
+Config: `/etc/zabbix-helpers/get-status.conf`
 
-Services: `/etc/sst-monitoring-helpers/get-status.d/*.conf`
+Services: `/etc/zabbix-helpers/get-status.d/*.conf`
 
 ####Services
 #####mysql
@@ -45,9 +45,9 @@ chmod 640 /var/lib/zabbix/home/.my.cnf
 * socat
 
 ###alivecheck-mysql.sh
-Script: `/usr/libexec/sst-monitoring-helpers/alivecheck-mysql.sh`
+Script: `/usr/libexec/zabbix-helpers/alivecheck-mysql.sh`
 
-Config: `/etc/sst-monitoring-helpers/alivecheck-mysql.conf`
+Config: `/etc/zabbix-helpers/alivecheck-mysql.conf`
 
 ####alivecheck-mysql.sh - Requirements
 * MySQL
@@ -86,9 +86,9 @@ chown root:zabbix /var/lib/zabbix/home/.my.cnf
 chmod 640 /var/lib/zabbix/home/.my.cnf
 ```
 ###healthcheck-mysql.php
-Script: `/usr/share/sst-monitoring-helpers/healthcheck-mysql.php`
+Script: `/usr/share/zabbix-helpers/healthcheck-mysql.php`
 
-Config: `/etc/sst-monitoring-helpers/healthcheck-mysql.conf`
+Config: `/etc/zabbix-helpers/healthcheck-mysql.conf`
 
 ####healthcheck-mysql.php - Requirements
 * PHP
@@ -122,8 +122,8 @@ EOF_SQL
 ####healthcheck-mysql.php - Usage
 * Integrate the healthcheck into your Apache virtual host by adding the following to your config file (PHP must be enabled):
 ```apache
-    Alias "/healthcheck" "/usr/share/sst-monitoring-helpers/healthcheck-mysql.php"
-    <Directory "/usr/share/sst-monitoring-helpers/">
+    Alias "/healthcheck" "/usr/share/zabbix-helpers/healthcheck-mysql.php"
+    <Directory "/usr/share/zabbix-helpers/">
         Require all granted
     </Directory>
 ```
