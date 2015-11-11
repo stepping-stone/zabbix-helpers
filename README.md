@@ -1,14 +1,14 @@
-#Zabbix Helpers
+#Monitoring Helpers
 ##Overview
-Zabbix monitoring helper scripts.
+Monitoring helper scripts, mainly for Zabbix.
 
 ##Scripts
 ###get-status.sh
-Script: `/usr/libexec/zabbix-helpers/get-status.sh`
+Script: `/usr/libexec/sst-monitoring-helpers/get-status.sh`
 
-Config: `/etc/zabbix-helpers/get-status.conf`
+Config: `/etc/sst-monitoring-helpers/get-status.conf`
 
-Services: `/etc/zabbix-helpers/get-status.d/*.conf`
+Services: `/etc/sst-monitoring-helpers/get-status.d/*.conf`
 
 ####Services
 #####mysql
@@ -17,21 +17,24 @@ Services: `/etc/zabbix-helpers/get-status.d/*.conf`
 * MySQL user, database option file:
 Create a dedicated MySQL user for the Zabbix Agent and store the credentials in a MySQL option file:
 ```bash
-# The MySQL user.
-mysqlUser=zabbix
-# The MySQL user password.
+# The MySQL host
+mysqlHost="localhost"
+# The MySQL user
+mysqlUser="zabbix"
+# The MySQL user password
 mysqlUserPass=
-# The MySQL user host.
+# The MySQL user host
 mysqlUserHost="%"
 
-# Create the MySQL user.
-mysql -u root -p -e "GRANT PROCESS ON *.* TO '${mysqlUser}'@'${mysqlUserHost}' IDENTIFIED BY '${mysqlUserPass}'"
+# Create the MySQL user
+mysql -u root -p -h ${mysqlHost}" -e "GRANT PROCESS, REPLICATION CLIENT, REPLICATION SLAVE ON *.* TO '${mysqlUser}'@'${mysqlUserHost}' IDENTIFIED BY '${mysqlUserPass}'"
 
-# Store the credentials.
+# Store the credentials
 cat << EOF > /var/lib/zabbix/home/.my.cnf
 [client]
 user=${mysqlUser}
 password=${mysqlUserPass}
+ssl=0
 EOF
 chown root:zabbix /var/lib/zabbix/home/.my.cnf
 chmod 640 /var/lib/zabbix/home/.my.cnf
@@ -42,24 +45,26 @@ chmod 640 /var/lib/zabbix/home/.my.cnf
 * socat
 
 ###alivecheck-mysql.sh
-Script: `/usr/libexec/zabbix-helpers/alivecheck-mysql.sh`
+Script: `/usr/libexec/sst-monitoring-helpers/alivecheck-mysql.sh`
 
-Config: `/etc/zabbix-helpers/alivecheck-mysql.conf`
+Config: `/etc/sst-monitoring-helpers/alivecheck-mysql.conf`
 
 ####alivecheck-mysql.sh - Requirements
 * MySQL
 * MySQL user, database and option file:
 Create a dedicated MySQL user for the Zabbix Agent and store the credentials in a MySQL option file, create the database:
 ```bash
-# The MySQL user.
+# The MySQL host
+mysqlHost="localhost"
+# The MySQL user
 mysqlUser="zabbix"
-# The MySQL user password.
+# The MySQL user password
 mysqlUserPass=
-# The MySQL user host.
+# The MySQL user host
 mysqlUserHost="%"
 
-# Create the database and the user.
-mysql -u root -p << EOF_SQL
+# Create the database and the user
+mysql -u root -p -h "${mysqlHost}" << EOF_SQL
 CREATE DATABASE \`alivecheck\` CHARACTER SET utf8;
 USE \`alivecheck\`;
 CREATE TABLE IF NOT EXISTS \`alivecheck\`
@@ -70,33 +75,36 @@ CREATE TABLE IF NOT EXISTS \`alivecheck\`
 GRANT SELECT, INSERT, DELETE ON \`alivecheck\`.\`alivecheck\` TO \`${mysqlUser}\`@\`${mysqlUserHost}\` IDENTIFIED BY "${mysqlUserPass}"
 EOF_SQL
 
-# Store the credentials.
+# Store the credentials
 cat << EOF > /var/lib/zabbix/home/.my.cnf
 [client]
 user=${mysqlUser}
 password=${mysqlUserPass}
+ssl=0
 EOF
 chown root:zabbix /var/lib/zabbix/home/.my.cnf
 chmod 640 /var/lib/zabbix/home/.my.cnf
 ```
 ###healthcheck-mysql.php
-Script: `/usr/share/zabbix-helpers/healthcheck-mysql.php`
+Script: `/usr/share/sst-monitoring-helpers/healthcheck-mysql.php`
 
-Config: `/etc/zabbix-helpers/healthcheck-mysql.conf`
+Config: `/etc/sst-monitoring-helpers/healthcheck-mysql.conf`
 
 ####healthcheck-mysql.php - Requirements
 * PHP
 * MySQL
 * Create the database and table:
 ```bash
-# The MySQL user.
+# The MySQL host
+mysqlHost="localhost"
+# The MySQL user
 mysqlUser="healthcheck"
-# The MySQL user password.
+# The MySQL user password
 mysqlUserPass=
-# The MySQL user host.
+# The MySQL user host
 mysqlUserHost="%"
 
-mysql -u root -p << EOF_SQL
+mysql -u root -p -h "${mysqlHost}" << EOF_SQL
 CREATE DATABASE \`healthcheck\` CHARACTER SET utf8;
 USE \`healthcheck\`;
 CREATE TABLE IF NOT EXISTS \`healthcheck\`
@@ -114,17 +122,17 @@ EOF_SQL
 ####healthcheck-mysql.php - Usage
 * Integrate the healthcheck into your Apache virtual host by adding the following to your config file (PHP must be enabled):
 ```apache
-    Alias "/healthcheck" "/usr/share/zabbix-helpers/healthcheck-mysql.php"
-    <Directory "/usr/share/zabbix-helpers">
+    Alias "/healthcheck" "/usr/share/sst-monitoring-helpers/healthcheck-mysql.php"
+    <Directory "/usr/share/sst-monitoring-helpers/">
         Require all granted
     </Directory>
 ```
-You may want to specify an application name - especially on a server with multiple healthchecks (add above the Alias):
+* You may want to specify an application name - especially on a server with multiple healthchecks (add above the Alias):
 ```apache
     RewriteEngine on
     RewriteRule ^/healthcheck$ /healthcheck?app=<ApplicationName> [PT]
 ```
-You may want to restrict the access (replace the Require from above):
+* You may want to restrict the access (replace the Require from above):
 ```apache
         Require ip <SomeIPs>
         ...

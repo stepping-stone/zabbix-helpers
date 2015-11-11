@@ -1,0 +1,3 @@
+# MySQL slave status
+# $1: Desired status variable (e.g. Slave_IO_Running).
+UserParameter=sst.mysql.slave[*],/usr/libexec/sst-monitoring-helpers/get-status.sh -s mysql-slave -v $1
