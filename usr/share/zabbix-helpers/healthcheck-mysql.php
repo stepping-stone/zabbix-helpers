@@ -181,7 +181,7 @@ class HealthCheckMysql {
 error_reporting(E_ALL);
 ini_set('display_errors',1);
 date_default_timezone_set('Europe/Zurich');
-require_once(dirname(__FILE__) . '/../../../etc/sst-monitoring-helpers/healthcheck-mysql.conf');
+require_once(dirname(__FILE__) . '/../../../etc/zabbix-helpers/healthcheck-mysql.conf');
 
 $hc = new HealthCheckMysql($_CONFIG);
 $hc->run();

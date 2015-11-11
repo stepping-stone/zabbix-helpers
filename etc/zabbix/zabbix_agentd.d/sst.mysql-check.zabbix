@@ -1,2 +1,2 @@
 # MySQL alive check
-UserParameter=sst.mysql.check,/usr/libexec/sst-monitoring-helpers/alivecheck-mysql.sh
+UserParameter=sst.mysql.check,/usr/libexec/zabbix-helpers/alivecheck-mysql.sh

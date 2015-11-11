@@ -42,7 +42,7 @@
 ROOT_DIR="$(dirname $(readlink -f ${0}))/../../.."
 
 # Load the configuration file
-source "${ROOT_DIR}/etc/sst-monitoring-helpers/alivecheck-mysql.conf"
+source "${ROOT_DIR}/etc/zabbix-helpers/alivecheck-mysql.conf"
 
 DATE_CMD="/bin/date"
 HOSTNAME_CMD="/bin/hostname"
