@@ -1,3 +1,3 @@
 # MySQL global configuration
 # $1: Desired config variable (e.g. max_connections).
-UserParameter=sst.mysql.config[*],/usr/libexec/zabbix-helpers/get-status.sh -s mysql-config -v $1
+UserParameter=sst.mysql.config[*],/usr/libexec/sst-monitoring-helpers/get-status.sh -s mysql-config -v $1

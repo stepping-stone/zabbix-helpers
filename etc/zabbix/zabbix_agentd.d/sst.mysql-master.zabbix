@@ -1,0 +1,3 @@
+# MySQL master status
+# $1: Desired status variable (e.g. Host).
+UserParameter=sst.mysql.master[*],/usr/libexec/sst-monitoring-helpers/get-status.sh -s mysql-master -v $1

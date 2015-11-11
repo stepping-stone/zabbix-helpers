@@ -86,7 +86,7 @@ function initializeScript ()
     scriptPath=$(${DIRNAME_CMD} ${scriptFile})
 
     # Load the configuration.
-    globalConfFile="${scriptPath}/../../../etc/zabbix-helpers/get-status.conf"
+    globalConfFile="${scriptPath}/../../../etc/sst-monitoring-helpers/get-status.conf"
     source "${globalConfFile}"
     # Check wheater the configuration could be loaded successfully.
     sourceGlobalConfFileStatusCode=${?}
