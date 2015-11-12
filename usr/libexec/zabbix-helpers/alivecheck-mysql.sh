@@ -69,7 +69,7 @@ function main ()
 # dbWrite
 function dbWrite ()
 {
-    ${MYSQL_CMD} -u ${dbUser} ${dbName} --connect-timeout=${mysqlTimeout} \
+    ${MYSQL_CMD} -u "${dbUser}" -h "${dbHost}" "${dbName}" --connect-timeout="${mysqlTimeout}" \
     -e "INSERT INTO \`${dbTable}\` (hostname,date) VALUES ('${hostname}','${date}')" \
     > /dev/null 2>&1
 }
@@ -79,7 +79,7 @@ function dbWrite ()
 # dbRead
 function dbRead ()
 {
-    ${MYSQL_CMD} -u ${dbUser} ${dbName} --connect-timeout=${mysqlTimeout} \
+    ${MYSQL_CMD} -u "${dbUser}" -h "${dbHost}" "${dbName}" --connect-timeout="${mysqlTimeout}" \
     -e "SELECT hostname,date FROM \`${dbTable}\` WHERE hostname='${hostname}' AND date='${date}'" \
     2> /dev/null
 }
@@ -89,7 +89,7 @@ function dbRead ()
 # dbCleanup
 function dbCleanup ()
 {
-    ${MYSQL_CMD} -u ${dbUser} ${dbName} --connect-timeout=${mysqlTimeout} \
+    ${MYSQL_CMD} -u "${dbUser}" -h "${dbHost}" "${dbName}" --connect-timeout="${mysqlTimeout}" \
     -e "DELETE FROM \`${dbTable}\` WHERE hostname='${hostname}' AND date='${date}'" \
     > /dev/null 2>&1
 }
