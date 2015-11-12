@@ -69,9 +69,15 @@ function main ()
 # dbWrite
 function dbWrite ()
 {
-    ${MYSQL_CMD} -u "${dbUser}" -h "${dbHost}" "${dbName}" --connect-timeout="${mysqlTimeout}" \
-    -e "INSERT INTO \`${dbTable}\` (hostname,date) VALUES ('${hostname}','${date}')" \
-    > /dev/null 2>&1
+    if "${dbSsl}"; then
+        ${MYSQL_CMD} -u "${dbUser}" -h "${dbHost}" "${dbName}" --ssl-ca="${dbSslCaCert}" --ssl-verify-server-cert --connect-timeout="${mysqlTimeout}" \
+        -e "INSERT INTO \`${dbTable}\` (hostname,date) VALUES ('${hostname}','${date}')" \
+        > /dev/null 2>&1
+    else
+        ${MYSQL_CMD} -u "${dbUser}" -h "${dbHost}" "${dbName}" --connect-timeout="${mysqlTimeout}" \
+        -e "INSERT INTO \`${dbTable}\` (hostname,date) VALUES ('${hostname}','${date}')" \
+        > /dev/null 2>&1
+    fi
 }
 
 # Read from the database
@@ -79,9 +85,15 @@ function dbWrite ()
 # dbRead
 function dbRead ()
 {
-    ${MYSQL_CMD} -u "${dbUser}" -h "${dbHost}" "${dbName}" --connect-timeout="${mysqlTimeout}" \
-    -e "SELECT hostname,date FROM \`${dbTable}\` WHERE hostname='${hostname}' AND date='${date}'" \
-    2> /dev/null
+    if "${dbSsl}"; then
+        ${MYSQL_CMD} -u "${dbUser}" -h "${dbHost}" "${dbName}" --ssl-ca="${dbSslCaCert}" --ssl-verify-server-cert --connect-timeout="${mysqlTimeout}" \
+        -e "SELECT hostname,date FROM \`${dbTable}\` WHERE hostname='${hostname}' AND date='${date}'" \
+        2> /dev/null
+    else
+        ${MYSQL_CMD} -u "${dbUser}" -h "${dbHost}" "${dbName}" --connect-timeout="${mysqlTimeout}" \
+        -e "SELECT hostname,date FROM \`${dbTable}\` WHERE hostname='${hostname}' AND date='${date}'" \
+        2> /dev/null
+    fi
 }
 
 # Cleanup the database
@@ -89,9 +101,15 @@ function dbRead ()
 # dbCleanup
 function dbCleanup ()
 {
-    ${MYSQL_CMD} -u "${dbUser}" -h "${dbHost}" "${dbName}" --connect-timeout="${mysqlTimeout}" \
-    -e "DELETE FROM \`${dbTable}\` WHERE hostname='${hostname}' AND date='${date}'" \
-    > /dev/null 2>&1
+    if "${dbSsl}"; then
+        ${MYSQL_CMD} -u "${dbUser}" -h "${dbHost}" "${dbName}" --ssl-ca="${dbSslCaCert}" --ssl-verify-server-cert --connect-timeout="${mysqlTimeout}" \
+        -e "DELETE FROM \`${dbTable}\` WHERE hostname='${hostname}' AND date='${date}'" \
+        > /dev/null 2>&1
+    else
+        ${MYSQL_CMD} -u "${dbUser}" -h "${dbHost}" "${dbName}" --connect-timeout="${mysqlTimeout}" \
+        -e "DELETE FROM \`${dbTable}\` WHERE hostname='${hostname}' AND date='${date}'" \
+        > /dev/null 2>&1
+    fi
 }
 trap "echo \${returnValue}; dbCleanup" EXIT
 
