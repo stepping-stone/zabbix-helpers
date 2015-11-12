@@ -27,13 +27,13 @@ mysqlUserPass=
 mysqlUserHost="%"
 
 # Create the MySQL user
-mysql -u root -p -h ${mysqlHost}" -e "GRANT PROCESS, REPLICATION CLIENT, REPLICATION SLAVE ON *.* TO '${mysqlUser}'@'${mysqlUserHost}' IDENTIFIED BY '${mysqlUserPass}'"
+mysql -u root -p -h "${mysqlHost}" -e "GRANT PROCESS, REPLICATION CLIENT, REPLICATION SLAVE ON *.* TO '${mysqlUser}'@'${mysqlUserHost}' IDENTIFIED BY '${mysqlUserPass}'"
 
 # Store the credentials
 cat << EOF > /var/lib/zabbix/home/.my.cnf
 [client]
-user=${mysqlUser}
-password=${mysqlUserPass}
+user="${mysqlUser}"
+password="${mysqlUserPass}"
 ssl=0
 EOF
 chown root:zabbix /var/lib/zabbix/home/.my.cnf
@@ -78,8 +78,8 @@ EOF_SQL
 # Store the credentials
 cat << EOF > /var/lib/zabbix/home/.my.cnf
 [client]
-user=${mysqlUser}
-password=${mysqlUserPass}
+user="${mysqlUser}"
+password="${mysqlUserPass}"
 ssl=0
 EOF
 chown root:zabbix /var/lib/zabbix/home/.my.cnf
