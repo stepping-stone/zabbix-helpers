@@ -57,7 +57,7 @@ Create a dedicated MySQL user for the Zabbix Agent and store the credentials in 
 # The MySQL host
 mysqlHost="localhost"
 # The MySQL user
-mysqlUser="zabbix"
+mysqlUser="alivecheck"
 # The MySQL user password
 mysqlUserPass=
 # The MySQL user host
@@ -74,17 +74,9 @@ CREATE TABLE IF NOT EXISTS \`alivecheck\`
         );
 GRANT SELECT, INSERT, DELETE ON \`alivecheck\`.\`alivecheck\` TO \`${mysqlUser}\`@\`${mysqlUserHost}\` IDENTIFIED BY "${mysqlUserPass}"
 EOF_SQL
-
-# Store the credentials
-cat << EOF > /var/lib/zabbix/home/.my.cnf
-[client]
-user="${mysqlUser}"
-password="${mysqlUserPass}"
-ssl=0
-EOF
-chown root:zabbix /var/lib/zabbix/home/.my.cnf
-chmod 640 /var/lib/zabbix/home/.my.cnf
 ```
+* Adjust the config file.
+
 ###healthcheck-mysql.php
 Script: `/usr/share/zabbix-helpers/healthcheck-mysql.php`
 
