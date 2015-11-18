@@ -446,7 +446,7 @@ function showAvailableServices ()
             serviceOptionsRequired=false
         done < "${serviceConfDir}/${availableService}.${serviceConfSuff}"
         while read line; do
-            if [[ ${line} == serviceOptions=* ]]; then
+            if [[ ${line} == serviceOptionsAvailable=* ]]; then
                 serviceOptionsAvailable=$(echo ${line} | ${SED_CMD} -n 's/serviceOptionsAvailable="\(.*\)"/\1/p')
                 break
             fi
