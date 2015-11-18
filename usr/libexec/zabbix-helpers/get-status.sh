@@ -209,7 +209,11 @@ function setService ()
     fi
 
     # Define the values by using the values from the configuration or setting a default.
-    statusFile="${statusFileDir}/${statusFileName:-sst.${serviceName}.zabbix}"
+    if ! [ "${serviceOptions}" ]; then
+        statusFile="${statusFileDir}/${statusFileName:-sst.${serviceName}.zabbix}"
+    else
+        statusFile="${statusFileDir}/${statusFileName:-sst.${serviceName}-${serviceOptions}-.zabbix}"
+    fi
     valuePattern="${valuePattern:-${defaultValuePattern}}"
     datePattern="${datePattern:-${defaultDatePattern}}"
 
