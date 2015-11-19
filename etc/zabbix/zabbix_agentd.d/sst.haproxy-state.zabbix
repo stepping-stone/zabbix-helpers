@@ -1,4 +1,4 @@
 # HAProxy frontend, backend and server
-# $1: Desired frontend, backend or server (e.g. http_https_in/FRONTEND).
+# $1: Desired frontend, backend or server (e.g. http_https_in,FRONTEND).
 # $2: Desired value (e.g. status).
-UserParameter=sst.haproxy.state[*],/usr/libexec/zabbix-helpers/get-status.sh -s haproxy-state -m $1 -v $2
+UserParameter=sst.haproxy.state[*],/usr/libexec/zabbix-helpers/get-status.sh -s haproxy-state -o $1 -v $2
