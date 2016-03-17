@@ -1,0 +1,4 @@
+##
+## zabbix user privilege specifications
+##
+zabbix ALL=NOPASSWD: OPEN_FILE_DESCRIPTORS

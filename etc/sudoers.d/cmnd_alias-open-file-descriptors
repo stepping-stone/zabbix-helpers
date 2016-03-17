@@ -1,0 +1,4 @@
+##
+## open-file-descriptors.sh command alias specifications
+##
+Cmnd_Alias OPEN_FILE_DESCRIPTORS = /usr/libexec/zabbix-helpers/open-file-descriptors.sh *
