@@ -1,0 +1,12 @@
+# Number of open file descriptors per user
+# $1: Desired user name
+UserParameter=sst.open-fd.user.num[*],/usr/bin/sudo /usr/libexec/zabbix-helpers/open-file-descriptors.sh -u $1
+
+# Number of open file descriptors of all programs matching the given regular expression
+# $1: Regular expression used to match the program's command line
+UserParameter=sst.open-fd.proc.num[*],/usr/bin/sudo /usr/libexec/zabbix-helpers/open-file-descriptors.sh -f -c $2
+
+# Number of open file descriptors of all programs matching the given regular expression, owned by a specific user
+# $1: Desired user name
+# $2: Regular expression used to match the program's command line
+UserParameter=sst.open-fd.user-proc.num[*],/usr/bin/sudo /usr/libexec/zabbix-helpers/open-file-descriptors.sh -f -u $1 -c $2
