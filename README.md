@@ -70,7 +70,7 @@ CREATE TABLE IF NOT EXISTS \`alivecheck\`
         , hostname  VARCHAR(128) NOT NULL
         , date  DATETIME NOT NULL
         );
-GRANT SELECT, INSERT, DELETE ON \`alivecheck\`.\`alivecheck\` TO \`${mysqlUser}\`@\`${mysqlUserHost}\`;"
+GRANT SELECT, INSERT, DELETE ON \`alivecheck\`.\`alivecheck\` TO \`${mysqlUser}\`@\`${mysqlUserHost}\`;
 EOF_SQL
 ```
 * Adjust the config file.
