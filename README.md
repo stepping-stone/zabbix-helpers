@@ -52,14 +52,12 @@ Config: `/etc/zabbix-helpers/alivecheck-mysql.conf`
 ####alivecheck-mysql.sh - Requirements
 * MySQL
 * MySQL user, database and option file:
-Create a dedicated MySQL user for the Zabbix Agent and store the credentials in a MySQL option file, create the database:
+Re-use the same user (<code>zabbix</code>) as for the get-status.sh, create the database and grant permissions:
 ```bash
 # The MySQL host
 mysqlHost="localhost"
 # The MySQL user
-mysqlUser="alivecheck"
-# The MySQL user password
-mysqlUserPass=
+mysqlUser="zabbix"
 # The MySQL user host
 mysqlUserHost="%"
 
@@ -72,7 +70,7 @@ CREATE TABLE IF NOT EXISTS \`alivecheck\`
         , hostname  VARCHAR(128) NOT NULL
         , date  DATETIME NOT NULL
         );
-GRANT SELECT, INSERT, DELETE ON \`alivecheck\`.\`alivecheck\` TO \`${mysqlUser}\`@\`${mysqlUserHost}\` IDENTIFIED BY "${mysqlUserPass}"
+GRANT SELECT, INSERT, DELETE ON \`alivecheck\`.\`alivecheck\` TO \`${mysqlUser}\`@\`${mysqlUserHost}\`;
 EOF_SQL
 ```
 * Adjust the config file.
