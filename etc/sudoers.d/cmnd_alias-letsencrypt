@@ -1,0 +1,4 @@
+##
+## letsencrypt-certificate-expiration.sh command alias specifications
+##
+Cmnd_Alias LETSENCRYPT_CERTIFICATE_EXPIRATION = /usr/libexec/zabbix-helpers/letsencrypt-certificate-expiration.sh
