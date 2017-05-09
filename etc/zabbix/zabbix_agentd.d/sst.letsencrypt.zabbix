@@ -1,0 +1,5 @@
+# Let's Encrypt certificate expiration dates
+# 
+#
+# Get the number of hours until the next Let's Encrypt certificate expires
+UserParameter=sst.letsencrypt.certificateexpiration,/usr/bin/sudo /usr/libexec/zabbix-helpers/letsencrypt-certificate-expiration.sh
