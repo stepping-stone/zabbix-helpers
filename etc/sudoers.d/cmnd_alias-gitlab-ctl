@@ -1,0 +1,4 @@
+##
+## gitlab-ctl command alias specifications
+##
+Cmnd_Alias GITLAB_CTL_STATUS = /bin/gitlab-ctl status *

@@ -33,10 +33,12 @@ install -m 644 usr/libexec/zabbix-helpers/* %{buildroot}%{_libexecdir}/zabbix-he
 install -m 644 usr/share/zabbix-helpers/* %{buildroot}%{_datadir}/zabbix-helpers
 
 %files
+%{_sysconfdir}/sudoers.d/cmnd_alias-gitlab-ctl
 %{_sysconfdir}/sudoers.d/cmnd_alias-letsencrypt                 
 %{_sysconfdir}/sudoers.d/cmnd_alias-lvm                         
 %{_sysconfdir}/sudoers.d/cmnd_alias-mdadm                       
 %{_sysconfdir}/sudoers.d/cmnd_alias-open-file-descriptors       
+%{_sysconfdir}/sudoers.d/user-zabbix_gitlab-ct
 %{_sysconfdir}/sudoers.d/user-zabbix_letsencrypt                
 %{_sysconfdir}/sudoers.d/user-zabbix_lvm                        
 %{_sysconfdir}/sudoers.d/user-zabbix_mdadm                      
