@@ -1,5 +1,5 @@
 Name:    sst-zabbix-helpers
-Version: 2.3.1
+Version: 2.3.2
 Release: 1%{?dist}
 Summary: stepping stone Zabbix helper scripts
 URL:     https://github.com/stepping-stone/zabbix-helpers
@@ -38,7 +38,7 @@ install -m 644 usr/share/zabbix-helpers/* %{buildroot}%{_datadir}/zabbix-helpers
 %{_sysconfdir}/sudoers.d/cmnd_alias-lvm                         
 %{_sysconfdir}/sudoers.d/cmnd_alias-mdadm                       
 %{_sysconfdir}/sudoers.d/cmnd_alias-open-file-descriptors       
-%{_sysconfdir}/sudoers.d/user-zabbix_gitlab-ct
+%{_sysconfdir}/sudoers.d/user-zabbix_gitlab-ctl
 %{_sysconfdir}/sudoers.d/user-zabbix_letsencrypt                
 %{_sysconfdir}/sudoers.d/user-zabbix_lvm                        
 %{_sysconfdir}/sudoers.d/user-zabbix_mdadm                      

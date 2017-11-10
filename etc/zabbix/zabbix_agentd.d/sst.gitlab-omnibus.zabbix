@@ -26,3 +26,5 @@ UserParameter=sst.gitlab-omnibus.redis-exporter,/usr/bin/sudo /bin/gitlab-ctl st
 UserParameter=sst.gitlab-omnibus.sidekiq,/usr/bin/sudo /bin/gitlab-ctl status sidekiq | /bin/cut -d":" -f 1
 # Check whether unicorn is running
 UserParameter=sst.gitlab-omnibus.unicorn,/usr/bin/sudo /bin/gitlab-ctl status unicorn | /bin/cut -d":" -f 1
+# Check whether nginx is running
+UserParameter=sst.gitlab-omnibus.nginx,/usr/bin/sudo /bin/gitlab-ctl status nginx | /bin/cut -d":" -f 1
