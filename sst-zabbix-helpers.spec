@@ -29,15 +29,17 @@ install -m 644 etc/sudoers.d/* %{buildroot}%{_sysconfdir}/sudoers.d/
 install -m 644 etc/zabbix-helpers/*.conf %{buildroot}%{_sysconfdir}/zabbix-helpers/
 install -m 644 etc/zabbix-helpers/get-status.d/* %{buildroot}%{_sysconfdir}/zabbix-helpers/get-status.d/
 install -m 644 etc/zabbix/zabbix_agentd.d/* %{buildroot}%{_sysconfdir}/zabbix/zabbix_agentd.d/
-install -m 644 usr/libexec/zabbix-helpers/* %{buildroot}%{_libexecdir}/zabbix-helpers/
+install -m 755 usr/libexec/zabbix-helpers/* %{buildroot}%{_libexecdir}/zabbix-helpers/
 install -m 644 usr/share/zabbix-helpers/* %{buildroot}%{_datadir}/zabbix-helpers
 
 %files
+%{_sysconfdir}/sudoers.d/cmnd_alias-du
 %{_sysconfdir}/sudoers.d/cmnd_alias-gitlab-ctl
 %{_sysconfdir}/sudoers.d/cmnd_alias-letsencrypt                 
 %{_sysconfdir}/sudoers.d/cmnd_alias-lvm                         
 %{_sysconfdir}/sudoers.d/cmnd_alias-mdadm                       
 %{_sysconfdir}/sudoers.d/cmnd_alias-open-file-descriptors       
+%{_sysconfdir}/sudoers.d/user-zabbix_du
 %{_sysconfdir}/sudoers.d/user-zabbix_gitlab-ctl
 %{_sysconfdir}/sudoers.d/user-zabbix_letsencrypt                
 %{_sysconfdir}/sudoers.d/user-zabbix_lvm                        
