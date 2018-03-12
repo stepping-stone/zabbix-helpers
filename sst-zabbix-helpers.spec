@@ -1,5 +1,5 @@
 Name:    sst-zabbix-helpers
-Version: 2.3.2
+Version: 2.4.1
 Release: 1%{?dist}
 Summary: stepping stone Zabbix helper scripts
 URL:     https://github.com/stepping-stone/zabbix-helpers
