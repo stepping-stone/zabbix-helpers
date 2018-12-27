@@ -74,7 +74,7 @@ function main ()
     if ${dbSsl}; then 
         debug "Enabling secure connections"
         mysqlSslOpts="--ssl --ssl-ca="${dbSslCaCert}""
-        ${dbSslVerifyServerCert} && mysqlSslOptsi+=" --ssl-verify-server-cert"
+        ${dbSslVerifyServerCert} && mysqlSslOpts+=" --ssl-verify-server-cert"
     fi
 
 
