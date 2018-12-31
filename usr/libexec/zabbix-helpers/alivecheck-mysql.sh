@@ -184,7 +184,9 @@ function dbRead ()
     local query="SELECT COUNT(*) FROM ${dbTable}
                  WHERE hostname='${MY_HOSTNAME}' AND date='${TIMESTAMP}'"
 
-    dbExecute "$query" || error "3" "dbRead failed: $(dbGetOutput)"
+    # Although dbRead has failed,
+    # still try to clean up database to prevent it from growing
+    dbExecute "$query" || dbCleanup 'true'; error "3" "dbRead failed: $(dbGetOutput)"
 
     if ! [[ $(dbGetOutput) =~ ^[0-9]+$ ]]; then
         error "3" "dbRead failed: Missing previously inserted record"
@@ -196,16 +198,22 @@ function dbRead ()
 # dbCleanup
 function dbCleanup ()
 {
+    local doNotExitOnError="$1"
+
     # Note, that all entries from this host will be deleted, instead of
     # only the exact host AND date entry. This automatically cleans-up old
     # stall entries.
     local query="DELETE FROM ${dbTable} WHERE hostname='${MY_HOSTNAME}'"
 
-    dbExecute "$query" || error "4" "dbCleanup failed: $(dbGetOutput)"
+    if [[ "$doNotExitOnError" = true ]]; then
+        dbExecute "$query" || debug "dbCleanup failed: $(dbGetOutput)"
+    else
+        dbExecute "$query" || error "4" "dbCleanup failed: $(dbGetOutput)"
+    fi
 }
 
 
 # Cleanup DB on HUP, INT or TERM signals and exit with an unknown error (0)
-trap "dbCleanup; echo 0; exit 1" SIGHUP SIGINT SIGTERM
+trap "dbCleanup 'true'; echo 0; exit 1" SIGHUP SIGINT SIGTERM
 
 main
