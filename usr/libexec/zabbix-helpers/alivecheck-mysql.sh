@@ -3,7 +3,7 @@
 # alivecheck-mysql.sh - Check the availability of a MySQL service
 ################################################################################
 #
-# Copyright (C) 2015 - 2016 stepping stone GmbH
+# Copyright (C) 2015 - 2019 stepping stone GmbH
 #                           Switzerland
 #                           http://www.stepping-stone.ch
 #                           support@stepping-stone.ch
