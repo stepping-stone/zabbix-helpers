@@ -67,16 +67,7 @@ MY_HOSTNAME="$( ${HOSTNAME_CMD} )"
 # main
 function main ()
 {
-    # Do not enable any MySQL client SSL/TLS options by default
-    mysqlSslOpts=""
-
-    # Enable SSL/TLS options if requested
-    if ${dbSsl}; then 
-        debug "Enabling secure connections"
-        mysqlSslOpts="--ssl --ssl-ca="${dbSslCaCert}""
-        ${dbSslVerifyServerCert} && mysqlSslOpts+=" --ssl-verify-server-cert"
-    fi
-
+    prepareMysqlClient
 
     dbWrite
     dbRead
@@ -85,6 +76,34 @@ function main ()
     debug "MySQL is alive"
     echo "1"
     exit 0
+}
+
+# Prepare options for the mysql client
+#
+# prepareMysqlClient
+function prepareMysqlClient ()
+{
+    # Do not enable any MySQL client SSL/TLS options by default
+    mysqlSslOpts=""
+
+    # Enable SSL/TLS options if requested
+    if ${dbSsl}; then
+        debug "Enabling secure connections"
+
+        # Lookup version of MySQL client
+        local mysqlClientVersion="$( ${MYSQL_CMD} --version | awk '{ print $5 }' | awk -F\, '{ print $1 }' )"
+        debug "Detected MySQL client version: ${mysqlClientVersion}"
+
+        # Use --ssl-mode from within version 5.7 (only Oracle MySQL, not MariaDB)
+        if [[ ! ${mysqlClientVersion} =~ 'MariaDB' ]] && [[ $( printf "5.7\n${mysqlClientVersion}" | sort -V | head -n1 ) == "5.7" ]]; then
+            mysqlSslOpts="--ssl-mode=REQUIRED --ssl-ca="${dbSslCaCert}""
+            ${dbSslVerifyServerCert} && mysqlSslOpts="--ssl-mode=VERIFY_IDENTITY --ssl-ca="${dbSslCaCert}""
+        # Otherwise use --ssl
+        else
+            mysqlSslOpts="--ssl --ssl-ca="${dbSslCaCert}""
+            ${dbSslVerifyServerCert} && mysqlSslOpts+=" --ssl-verify-server-cert"
+        fi
+    fi
 }
 
 
