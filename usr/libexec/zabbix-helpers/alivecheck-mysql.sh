@@ -184,9 +184,7 @@ function dbRead ()
     local query="SELECT COUNT(*) FROM ${dbTable}
                  WHERE hostname='${MY_HOSTNAME}' AND date='${TIMESTAMP}'"
 
-    # Although dbRead has failed,
-    # still try to clean up database to prevent it from growing
-    dbExecute "$query" || dbCleanup 'true'; error "3" "dbRead failed: $(dbGetOutput)"
+    dbExecute "$query" || error "3" "dbRead failed: $(dbGetOutput)"
 
     if ! [[ $(dbGetOutput) =~ ^[0-9]+$ ]]; then
         error "3" "dbRead failed: Missing previously inserted record"
