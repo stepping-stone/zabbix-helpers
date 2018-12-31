@@ -1,0 +1,6 @@
+# Linux filesystem monitoring
+# 
+#
+# Get the size of a folder
+# $1: Path to the folder
+UserParameter=sst.fs.foldersize[*],/usr/bin/sudo /usr/bin/du --byte --summarize '$1' | cut -f 1

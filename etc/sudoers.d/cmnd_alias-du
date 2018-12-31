@@ -1,0 +1,4 @@
+##
+## du command alias specifications
+##
+Cmnd_Alias DU = /usr/bin/du

@@ -1,18 +1,18 @@
-#Zabbix Helpers
-##Overview
+# Zabbix Helpers
+## Overview
 Zabbix helper scripts, mainly for Zabbix.
 
-##Scripts
-###get-status.sh
+## Scripts
+### get-status.sh
 Script: `/usr/libexec/zabbix-helpers/get-status.sh`
 
 Config: `/etc/zabbix-helpers/get-status.conf`
 
 Services: `/etc/zabbix-helpers/get-status.d/*.conf`
 
-####Services
-#####mysql
-######mysql - Requirements
+#### Services
+##### mysql
+###### mysql - Requirements
 * MySQL Client
 * MySQL user, database option file:
 Create a dedicated MySQL user for the Zabbix Agent and store the credentials in a MySQL option file:
@@ -40,16 +40,16 @@ chown root:zabbix /var/lib/zabbix/home/.my.cnf
 chmod 640 /var/lib/zabbix/home/.my.cnf
 ```
 
-#####haproxy
-######haproxy - Requirements
+##### haproxy
+###### haproxy - Requirements
 * socat
 
-###alivecheck-mysql.sh
+### alivecheck-mysql.sh
 Script: `/usr/libexec/zabbix-helpers/alivecheck-mysql.sh`
 
 Config: `/etc/zabbix-helpers/alivecheck-mysql.conf`
 
-####alivecheck-mysql.sh - Requirements
+#### alivecheck-mysql.sh - Requirements
 * MySQL
 * MySQL user, database and option file:
 Re-use the same user (<code>zabbix</code>) as for the get-status.sh, create the database and grant permissions:
@@ -75,12 +75,12 @@ EOF_SQL
 ```
 * Adjust the config file.
 
-###healthcheck-mysql.php
+### healthcheck-mysql.php
 Script: `/usr/share/zabbix-helpers/healthcheck-mysql.php`
 
 Config: `/etc/zabbix-helpers/healthcheck-mysql.conf`
 
-####healthcheck-mysql.php - Requirements
+#### healthcheck-mysql.php - Requirements
 * PHP
 * MySQL
 * Create the database and table:
@@ -109,7 +109,7 @@ EOF_SQL
 ```
 * Adjust the config file.
 
-####healthcheck-mysql.php - Usage
+#### healthcheck-mysql.php - Usage
 * Integrate the healthcheck into your Apache virtual host by adding the following to your config file (PHP must be enabled):
 ```apache
     Alias "/healthcheck" "/usr/share/zabbix-helpers/healthcheck-mysql.php"

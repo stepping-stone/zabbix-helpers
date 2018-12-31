@@ -67,16 +67,7 @@ MY_HOSTNAME="$( ${HOSTNAME_CMD} )"
 # main
 function main ()
 {
-    # Do not enable any MySQL client SSL/TLS options by default
-    mysqlSslOpts=""
-
-    # Enable SSL/TLS options if requested
-    if ${dbSsl}; then 
-        debug "Enabling secure connections"
-        mysqlSslOpts="--ssl --ssl-ca="${dbSslCaCert}""
-        ${dbSslVerifyServerCert} && mysqlSslOptsi+=" --ssl-verify-server-cert"
-    fi
-
+    prepareMysqlClient
 
     dbWrite
     dbRead
@@ -85,6 +76,34 @@ function main ()
     debug "MySQL is alive"
     echo "1"
     exit 0
+}
+
+# Prepare options for the mysql client
+#
+# prepareMysqlClient
+function prepareMysqlClient ()
+{
+    # Do not enable any MySQL client SSL/TLS options by default
+    mysqlSslOpts=""
+
+    # Enable SSL/TLS options if requested
+    if ${dbSsl}; then
+        debug "Enabling secure connections"
+
+        # Lookup version of MySQL client
+        local mysqlClientVersion="$( ${MYSQL_CMD} --version | awk '{ print $5 }' | awk -F\, '{ print $1 }' )"
+        debug "Detected MySQL client version: ${mysqlClientVersion}"
+
+        # Use --ssl-mode from within version 5.7 (only Oracle MySQL, not MariaDB)
+        if [[ ! ${mysqlClientVersion} =~ 'MariaDB' ]] && [[ $( printf "5.7\n${mysqlClientVersion}" | sort -V | head -n1 ) == "5.7" ]]; then
+            mysqlSslOpts="--ssl-mode=REQUIRED --ssl-ca="${dbSslCaCert}""
+            ${dbSslVerifyServerCert} && mysqlSslOpts="--ssl-mode=VERIFY_IDENTITY --ssl-ca="${dbSslCaCert}""
+        # Otherwise use --ssl
+        else
+            mysqlSslOpts="--ssl --ssl-ca="${dbSslCaCert}""
+            ${dbSslVerifyServerCert} && mysqlSslOpts+=" --ssl-verify-server-cert"
+        fi
+    fi
 }
 
 
@@ -165,7 +184,9 @@ function dbRead ()
     local query="SELECT COUNT(*) FROM ${dbTable}
                  WHERE hostname='${MY_HOSTNAME}' AND date='${TIMESTAMP}'"
 
-    dbExecute "$query" || error "3" "dbRead failed: $(dbGetOutput)"
+    # Although dbRead has failed,
+    # still try to clean up database to prevent it from growing
+    dbExecute "$query" || dbCleanup 'true'; error "3" "dbRead failed: $(dbGetOutput)"
 
     if ! [[ $(dbGetOutput) =~ ^[0-9]+$ ]]; then
         error "3" "dbRead failed: Missing previously inserted record"
@@ -177,16 +198,22 @@ function dbRead ()
 # dbCleanup
 function dbCleanup ()
 {
+    local doNotExitOnError="$1"
+
     # Note, that all entries from this host will be deleted, instead of
     # only the exact host AND date entry. This automatically cleans-up old
     # stall entries.
     local query="DELETE FROM ${dbTable} WHERE hostname='${MY_HOSTNAME}'"
 
-    dbExecute "$query" || error "4" "dbCleanup failed: $(dbGetOutput)"
+    if [[ "$doNotExitOnError" = true ]]; then
+        dbExecute "$query" || debug "dbCleanup failed: $(dbGetOutput)"
+    else
+        dbExecute "$query" || error "4" "dbCleanup failed: $(dbGetOutput)"
+    fi
 }
 
 
 # Cleanup DB on HUP, INT or TERM signals and exit with an unknown error (0)
-trap "dbCleanup; echo 0; exit 1" SIGHUP SIGINT SIGTERM
+trap "dbCleanup 'true'; echo 0; exit 1" SIGHUP SIGINT SIGTERM
 
 main

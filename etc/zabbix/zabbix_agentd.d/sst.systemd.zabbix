@@ -1,0 +1,19 @@
+# Systemd related components
+# 
+# Check if any services have failed
+UserParameter=sst.systemd.failed,/usr/bin/systemctl --no-legend list-units --state=failed | grep -v -f /etc/zabbix/non_critical_services | wc -l
+
+# Retrieve a list of failed services
+UserParameter=sst.systemd.failed.servicelist,/usr/bin/systemctl --no-legend list-units --state=failed | cut -d" " -f1
+
+# Check if any services deemed non-critical have failed
+UserParameter=sst.systemd.failed.noncritical,/usr/bin/systemctl --no-legend list-units --state=failed | grep -f /etc/zabbix/non_critical_services | wc -l
+
+# Check the active state of a given service
+# $1: The service which in which's active state we are interested
+UserParameter=sst.systemd.activestate[*],/usr/bin/systemctl show '$1' | grep "^ActiveState=" | cut -d"=" -f 2
+
+# Check the substate of a given service
+# $1: The service which in which's substate we are interested
+UserParameter=sst.systemd.substate[*],/usr/bin/systemctl show '$1' | grep "^SubState=" | cut -d"=" -f 2
+

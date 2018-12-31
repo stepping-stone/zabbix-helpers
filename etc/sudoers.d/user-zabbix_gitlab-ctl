@@ -1,0 +1,4 @@
+##
+## zabbix user privilege specifications
+##
+zabbix ALL=NOPASSWD: GITLAB_CTL_STATUS

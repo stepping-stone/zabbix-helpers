@@ -1,0 +1,30 @@
+# Gitlab-Omnibus components
+# 
+# Check whether gitaly is running
+UserParameter=sst.gitlab-omnibus.gitaly,/usr/bin/sudo /bin/gitlab-ctl status gitaly | /bin/cut -d":" -f 1
+# Check whether gitlab-monitor is running
+UserParameter=sst.gitlab-omnibus.gitlab-monitor,/usr/bin/sudo /bin/gitlab-ctl status gitlab-monitor | /bin/cut -d":" -f 1
+# Check whether gitlab-workhorse is running
+UserParameter=sst.gitlab-omnibus.gitlab-workhorse,/usr/bin/sudo /bin/gitlab-ctl status gitlab-workhorse | /bin/cut -d":" -f 1
+# Check whether logrotate is running
+UserParameter=sst.gitlab-omnibus.logrotate,/usr/bin/sudo /bin/gitlab-ctl status logrotate | /bin/cut -d":" -f 1
+# Check whether mailroom is running
+UserParameter=sst.gitlab-omnibus.mailroom,/usr/bin/sudo /bin/gitlab-ctl status mailroom | /bin/cut -d":" -f 1
+# Check whether node-exporter is running
+UserParameter=sst.gitlab-omnibus.node-exporter,/usr/bin/sudo /bin/gitlab-ctl status node-exporter | /bin/cut -d":" -f 1
+# Check whether postgres-exporter is running
+UserParameter=sst.gitlab-omnibus.postgres-exporter,/usr/bin/sudo /bin/gitlab-ctl status postgres-exporter | /bin/cut -d":" -f 1
+# Check whether postgresql is running
+UserParameter=sst.gitlab-omnibus.postgresql,/usr/bin/sudo /bin/gitlab-ctl status postgresql | /bin/cut -d":" -f 1
+# Check whether prometheus is running
+UserParameter=sst.gitlab-omnibus.prometheus,/usr/bin/sudo /bin/gitlab-ctl status prometheus | /bin/cut -d":" -f 1
+# Check whether redis is running
+UserParameter=sst.gitlab-omnibus.redis,/usr/bin/sudo /bin/gitlab-ctl status redis | /bin/cut -d":" -f 1
+# Check whether redis-exporter is running
+UserParameter=sst.gitlab-omnibus.redis-exporter,/usr/bin/sudo /bin/gitlab-ctl status redis-exporter | /bin/cut -d":" -f 1
+# Check whether sidekiq is running
+UserParameter=sst.gitlab-omnibus.sidekiq,/usr/bin/sudo /bin/gitlab-ctl status sidekiq | /bin/cut -d":" -f 1
+# Check whether unicorn is running
+UserParameter=sst.gitlab-omnibus.unicorn,/usr/bin/sudo /bin/gitlab-ctl status unicorn | /bin/cut -d":" -f 1
+# Check whether nginx is running
+UserParameter=sst.gitlab-omnibus.nginx,/usr/bin/sudo /bin/gitlab-ctl status nginx | /bin/cut -d":" -f 1
