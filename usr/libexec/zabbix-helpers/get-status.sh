@@ -3,7 +3,7 @@
 # get-status.sh - Get the status of services for monitoring purposes.
 ################################################################################
 #
-# Copyright (C) 2015 stepping stone GmbH
+# Copyright (C) 2019 stepping stone GmbH
 #                    Switzerland
 #                    http://www.stepping-stone.ch
 #                    support@stepping-stone.ch
