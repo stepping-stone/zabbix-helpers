@@ -45,8 +45,6 @@
 # DEBUG=true alivecheck-mysql.sh
 ################################################################################
 
-DEBUG="${DEBUG:-false}"
-
 # Root directory of the script
 ROOT_DIR="$(dirname $(readlink -f ${0}))/../../.."
 
@@ -170,7 +168,9 @@ function dbExecute ()
 # debug message
 function debug ()
 {
-    ${DEBUG} && echo -e "$1"
+    if [[ "$DEBUG" = true ]]; then
+        echo -e "$1"
+    fi
 }
 
 # Exit with an error code
