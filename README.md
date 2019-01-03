@@ -34,7 +34,6 @@ cat << EOF > /var/lib/zabbix/home/.my.cnf
 [client]
 user="${mysqlUser}"
 password="${mysqlUserPass}"
-ssl=0
 EOF
 chown root:zabbix /var/lib/zabbix/home/.my.cnf
 chmod 640 /var/lib/zabbix/home/.my.cnf
