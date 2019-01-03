@@ -57,6 +57,7 @@ DATE_CMD="/bin/date"
 HOSTNAME_CMD="/bin/hostname"
 MYSQL_CMD="/usr/bin/mysql"
 TIMEOUT_CMD="/usr/bin/timeout"
+MKTEMP_CMD="/usr/bin/mktemp"
 
 TIMESTAMP="$( ${DATE_CMD} +"%F %H:%M:%S" )"
 MY_HOSTNAME="$( ${HOSTNAME_CMD} )"
@@ -112,7 +113,16 @@ function prepareMysqlClient ()
 # dbGetOutput
 function dbGetOutput ()
 {
-    echo "${_DB_OUTPUT}"
+    echo "${_DB_STDOUT}"
+}
+
+
+# Echos the last database client error
+#
+# dbGetError
+function dbGetError ()
+{
+    echo "${_DB_STDERR}"
 }
 
 
@@ -129,20 +139,23 @@ function dbExecute ()
     local cmd="${TIMEOUT_CMD} --signal KILL ${mysqlCmdTimeout}s \
                    ${MYSQL_CMD} --host="${dbHost}"
                                 --database="${dbName}"
-			        --connect-timeout="${mysqlConTimeout}"
-			        --batch
-			        --silent
-			        ${mysqlSslOpts}"
+			                          --connect-timeout="${mysqlConTimeout}"
+			                          --batch
+			                          --silent
+			                          ${mysqlSslOpts}"
     
     debug "MySQL command:\n${cmd}"
     debug "MySQL query:  $query"
 
-    local returnCode
-    _DB_OUTPUT="$( ${cmd} --execute="${query}" 2>&1 )"
-    returnCode=$?
+    local tmpStdErrFile=$( ${MKTEMP_CMD} )
+    _DB_STDOUT="$( ${cmd} --execute="${query}" 2>"${tmpStdErrFile}" )"
+    local returnCode=$?
+    _DB_STDERR=$( <"${tmpStdErrFile}" )
+    rm "${tmpStdErrFile}"
 
     debug "MySQL return code: ${returnCode}"
-    debug "MySQL output:      ${_DB_OUTPUT}"
+    debug "MySQL output:      ${_DB_STDOUT}"
+    debug "MySQL error:       ${_DB_STDERR}"
 
     return $returnCode
 }
@@ -173,7 +186,7 @@ function dbWrite ()
     local query="INSERT INTO ${dbTable} (hostname,date)
                  VALUES ('${MY_HOSTNAME}', '${TIMESTAMP}');"
 
-    dbExecute "$query" || error "2" "dbWrite failed: $(dbGetOutput)"
+    dbExecute "$query" || error "2" "dbWrite failed: $(dbGetError)"
 }
 
 # Read from the database
@@ -184,7 +197,7 @@ function dbRead ()
     local query="SELECT COUNT(*) FROM ${dbTable}
                  WHERE hostname='${MY_HOSTNAME}' AND date='${TIMESTAMP}'"
 
-    dbExecute "$query" || error "3" "dbRead failed: $(dbGetOutput)"
+    dbExecute "$query" || error "3" "dbRead failed: $(dbGetError)"
 
     if ! [[ $(dbGetOutput) =~ ^[0-9]+$ ]]; then
         error "3" "dbRead failed: Missing previously inserted record"
@@ -204,9 +217,9 @@ function dbCleanup ()
     local query="DELETE FROM ${dbTable} WHERE hostname='${MY_HOSTNAME}'"
 
     if [[ "$doNotExitOnError" = true ]]; then
-        dbExecute "$query" || debug "dbCleanup failed: $(dbGetOutput)"
+        dbExecute "$query" || debug "dbCleanup failed: $(dbGetError)"
     else
-        dbExecute "$query" || error "4" "dbCleanup failed: $(dbGetOutput)"
+        dbExecute "$query" || error "4" "dbCleanup failed: $(dbGetError)"
     fi
 }
 
