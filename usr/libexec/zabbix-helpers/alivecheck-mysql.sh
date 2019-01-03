@@ -88,7 +88,7 @@ function prepareMysqlClient ()
     mysqlSslOpts=""
 
     # Enable SSL/TLS options if requested
-    if ${dbSsl}; then
+    if [[ "$dbSsl" = true ]]; then
         debug "Enabling secure connections"
 
         # Lookup version of MySQL client
@@ -96,13 +96,18 @@ function prepareMysqlClient ()
         debug "Detected MySQL client version: ${mysqlClientVersion}"
 
         # Use --ssl-mode from within version 5.7 (only Oracle MySQL, not MariaDB)
-        if [[ ! ${mysqlClientVersion} =~ 'MariaDB' ]] && [[ $( printf "5.7\n${mysqlClientVersion}" | sort -V | head -n1 ) == "5.7" ]]; then
-            mysqlSslOpts="--ssl-mode=REQUIRED --ssl-ca="${dbSslCaCert}""
-            ${dbSslVerifyServerCert} && mysqlSslOpts="--ssl-mode=VERIFY_IDENTITY --ssl-ca="${dbSslCaCert}""
+        if [[ ! "$mysqlClientVersion" =~ 'MariaDB' ]] && [[ $( printf "5.7\n${mysqlClientVersion}" | sort -V | head -n1 ) == "5.7" ]]; then
+            if [[ ! "$dbSslVerifyIdentity" = true ]]; then
+                mysqlSslOpts="--ssl-mode=VERIFY_IDENTITY --ssl-ca="${dbSslCaCert}""
+            else
+                mysqlSslOpts="--ssl-mode=REQUIRED --ssl-ca="${dbSslCaCert}""
+            fi
         # Otherwise use --ssl
         else
             mysqlSslOpts="--ssl --ssl-ca="${dbSslCaCert}""
-            ${dbSslVerifyServerCert} && mysqlSslOpts+=" --ssl-verify-server-cert"
+            if [[ ! "$dbSslVerifyIdentity" = true ]]; then
+                mysqlSslOpts+=" --ssl-verify-server-cert"
+            fi
         fi
     fi
 }
