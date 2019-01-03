@@ -103,7 +103,7 @@ function prepareMysqlClient ()
         # Otherwise use --ssl
         else
             mysqlSslOpts="--ssl --ssl-ca="${dbSslCaCert}""
-            if [[ ! "$dbSslVerifyIdentity" = true ]]; then
+            if [[ "$dbSslVerifyIdentity" = true ]]; then
                 mysqlSslOpts+=" --ssl-verify-server-cert"
             fi
         fi
