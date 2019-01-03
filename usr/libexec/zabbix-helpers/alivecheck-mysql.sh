@@ -95,7 +95,7 @@ function prepareMysqlClient ()
 
         # Use --ssl-mode from within version 5.7 (only Oracle MySQL, not MariaDB)
         if [[ ! "$mysqlClientVersion" =~ 'MariaDB' ]] && [[ $( printf "5.7\n${mysqlClientVersion}" | sort -V | head -n1 ) == "5.7" ]]; then
-            if [[ ! "$dbSslVerifyIdentity" = true ]]; then
+            if [[ "$dbSslVerifyIdentity" = true ]]; then
                 mysqlSslOpts="--ssl-mode=VERIFY_IDENTITY --ssl-ca="${dbSslCaCert}""
             else
                 mysqlSslOpts="--ssl-mode=REQUIRED --ssl-ca="${dbSslCaCert}""
