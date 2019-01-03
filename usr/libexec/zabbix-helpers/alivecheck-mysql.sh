@@ -139,23 +139,22 @@ function dbExecute ()
 
     # MySQL client command with connection and command timeout 
     # The user credentials are stored within ~/.my.cnf
-    local cmd="${TIMEOUT_CMD} --signal KILL ${mysqlCmdTimeout}s \
+    local cmd="${TIMEOUT_CMD} --signal KILL ${mysqlCmdTimeout}s
                    ${MYSQL_CMD} --host="${dbHost}"
                                 --database="${dbName}"
-			                          --connect-timeout="${mysqlConTimeout}"
-			                          --batch
-			                          --silent
-			                          ${mysqlSslOpts}"
+                                --connect-timeout="${mysqlConTimeout}"
+                                --batch
+                                --silent
+                                ${mysqlSslOpts}"
     
-    debug "MySQL command:\n${cmd}"
-    debug "MySQL query: ${query}"
-
     local tmpStdErrFile=$( ${MKTEMP_CMD} )
     _DB_STDOUT="$( ${cmd} --execute="${query}" 2>"${tmpStdErrFile}" )"
     local returnCode=$?
     _DB_STDERR=$( <"${tmpStdErrFile}" )
     rm "${tmpStdErrFile}"
 
+    debug "MySQL command:     ${cmd}"
+    debug "MySQL query:       ${query}"
     debug "MySQL return code: ${returnCode}"
     debug "MySQL output:      ${_DB_STDOUT}"
     debug "MySQL error:       ${_DB_STDERR}"
@@ -191,6 +190,7 @@ function dbWrite ()
     local query="INSERT INTO ${dbTable} (hostname,date)
                  VALUES ('${MY_HOSTNAME}', '${TIMESTAMP}');"
 
+    debug "Executing dbWrite"
     dbExecute "$query" || error "2" "dbWrite failed: $(dbGetError)"
 }
 
@@ -202,10 +202,11 @@ function dbRead ()
     local query="SELECT COUNT(*) FROM ${dbTable}
                  WHERE hostname='${MY_HOSTNAME}' AND date='${TIMESTAMP}'"
 
+    debug "Executing dbRead"
     dbExecute "$query" || error "3" "dbRead failed: $(dbGetError)"
 
     if ! [[ $(dbGetOutput) =~ ^[0-9]+$ ]]; then
-        error "3" "dbRead failed: Missing previously inserted record"
+        error "3" "dbRead failed: Missing previously inserted record. MySQL output: $(dbGetOutput)"
     fi
 }
 
@@ -221,6 +222,7 @@ function dbCleanup ()
     # stall entries.
     local query="DELETE FROM ${dbTable} WHERE hostname='${MY_HOSTNAME}'"
 
+    debug "Executing dbCleanup"
     if [[ "$doNotExitOnError" = true ]]; then
         dbExecute "$query" || debug "dbCleanup failed: $(dbGetError)"
     else
