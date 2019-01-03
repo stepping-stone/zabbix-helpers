@@ -116,7 +116,7 @@ function prepareMysqlClient ()
 # dbGetOutput
 function dbGetOutput ()
 {
-    echo "${_DB_STDOUT}"
+    echo "$_DB_STDOUT"
 }
 
 
@@ -125,7 +125,7 @@ function dbGetOutput ()
 # dbGetError
 function dbGetError ()
 {
-    echo "${_DB_STDERR}"
+    echo "$_DB_STDERR"
 }
 
 
@@ -148,7 +148,7 @@ function dbExecute ()
 			                          ${mysqlSslOpts}"
     
     debug "MySQL command:\n${cmd}"
-    debug "MySQL query:  $query"
+    debug "MySQL query: ${query}"
 
     local tmpStdErrFile=$( ${MKTEMP_CMD} )
     _DB_STDOUT="$( ${cmd} --execute="${query}" 2>"${tmpStdErrFile}" )"
@@ -160,7 +160,7 @@ function dbExecute ()
     debug "MySQL output:      ${_DB_STDOUT}"
     debug "MySQL error:       ${_DB_STDERR}"
 
-    return $returnCode
+    return "$returnCode"
 }
 
 # Echo a message if debug mode has been enabled
@@ -179,7 +179,7 @@ function debug ()
 function error ()
 {
     echo "$1"
-    ${DEBUG} && echo "ERROR: $2" >&2
+    debug "ERROR: $2" >&2
     exit 1
 }
 
