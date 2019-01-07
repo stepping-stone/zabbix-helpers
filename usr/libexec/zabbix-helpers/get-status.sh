@@ -3,7 +3,7 @@
 # get-status.sh - Get the status of services for monitoring purposes.
 ################################################################################
 #
-# Copyright (C) 2015 stepping stone GmbH
+# Copyright (C) 2019 stepping stone GmbH
 #                    Switzerland
 #                    http://www.stepping-stone.ch
 #                    support@stepping-stone.ch
@@ -88,7 +88,7 @@ function initializeScript ()
     # Load the configuration.
     globalConfFile="${scriptPath}/../../../etc/zabbix-helpers/get-status.conf"
     source "${globalConfFile}"
-    # Check wheater the configuration could be loaded successfully.
+    # Check whether the configuration could be loaded successfully.
     sourceGlobalConfFileStatusCode=${?}
     if [ ${sourceGlobalConfFileStatusCode} -ne 0 ]; then
         echo "Error: Couldn't load the configuration file. Status code: ${sourceGlobalConfFileStatusCode}" >&2
@@ -175,7 +175,7 @@ function setService ()
             break
         fi
     done
-    # Check wheater the selected service is available.
+    # Check whether the selected service is available.
     if ! ${serviceAvailable}; then
         echo -e "Error: The service \"${serviceName}\" isn't supported.\n" >&2
         showAvailableServices "error"
@@ -186,7 +186,7 @@ function setService ()
 
     # Load the service configuration.
     source "${serviceConfFile}"
-    # Check wheater the configuration could be loaded successfully.
+    # Check whether the configuration could be loaded successfully.
     sourceServiceConfFileStatusCode=${?}
     if [ ${sourceServiceConfFileStatusCode} -ne 0 ]; then
         echo "Error: Couldn't load the configuration file. Status code: ${sourceServiceConfFileStatusCode}" >&2
@@ -202,7 +202,7 @@ function setService ()
         fi
     fi
 
-    # Check wheater the status generation command is defined.
+    # Check whether the status generation command is defined.
     if [ -z "${statusGenerationCommand}" ]; then
         echo "Error: Missing status generation command in configuration file ${serviceConfFile}." >&2
         exit 1
@@ -238,15 +238,15 @@ function setService ()
 }
 
 ##############
-# Check wheater the status file exists and is younger than update interval.
+# Check whether the status file exists and is younger than update interval.
 function checkStatusFile ()
 {
     statusFileOk=false
 
-    # Check wheater the status file exists.
+    # Check whether the status file exists.
     if [ ! -f "${statusFile}" ]; then
         ${showDebugMessages} && echo "Info: The status file doesn't exist yet."
-        # Check wheater the status file is creatable.
+        # Check whether the status file is creatable.
         ${TOUCH_CMD} "${statusFile}" 2> /dev/null
         testStatusFileStatusCode=${?}
         if [ ${testStatusFileStatusCode} -ne 0 ]; then
@@ -261,7 +261,7 @@ function checkStatusFile ()
 
     ${showDebugMessages} && echo "Info: The status file exists."
 
-    # Check wheater the status file is read and writable.
+    # Check whether the status file is read and writable.
     if [[ ! -r "${statusFile}" || ! -w "${statusFile}" ]]; then
         echo "Error: The status file is not read or writable." >&2
         exit 1
@@ -272,7 +272,7 @@ function checkStatusFile ()
     # Lookup the age of the status file.
     checkStatusFileAge=$(${FIND_CMD} "${statusFile}" -mmin +${updateInterval} 2> /dev/null)
     checkStatusFileAgeStatusCode=${?}
-    # Check wheater the status file age lookup was successful.
+    # Check whether the status file age lookup was successful.
     if [ ${checkStatusFileAgeStatusCode} -ne 0 ]; then
         ${showDebugMessages} && echo "Error: The status file age check wasn't successful. Status code: ${checkStatusFileAgeStatusCode}" >&2
         globalStatusCode="1"
@@ -337,7 +337,7 @@ function generateStatusFile ()
     # Filter out the status output.
     statusOutput=$(echo "${statusOutput}" | ${HEAD_CMD} -n -1)
 
-    # Check wheater the status generation command was successful.
+    # Check whether the status generation command was successful.
     statusOutputFailed=false
     for code in ${statusOutputStatusCode}; do
         if [ ${code} -ne 0 ]; then
@@ -357,7 +357,7 @@ function generateStatusFile ()
     fi
     ${showDebugMessages} && echo "Info: The status generation command was successful."
 
-    # Check wheater the status output is empty.
+    # Check whether the status output is empty.
     if [ -z "${statusOutput}" ]; then
         if ${statusFileOk}; then
             ${showDebugMessages} && echo "Error: The status generation command produced an empty output." >&2
@@ -372,7 +372,7 @@ function generateStatusFile ()
     # Write down the status output and the date to the status file.
     printf 2> /dev/null '%b\n' "${statusOutput}" "${datePattern}" > "${statusFile}"
     writeStatusOutputStatusCode=${?}
-    # Check wheater the output could be written down successfully.
+    # Check whether the output could be written down successfully.
     if [ ${writeStatusOutputStatusCode} -ne 0 ]; then
         if ${statusFileOk}; then
             ${showDebugMessages} && echo "Error: The status couldn't be written down. Status code: ${writeStatusOutputStatusCode}" >&2
@@ -398,15 +398,15 @@ function getValue ()
         returnValue=$(${SED_CMD} -n "s/${sedValuePattern}/\1/p" "${statusFile}" 2> /dev/null)
     fi
     returnValueStatusCode=${?}
-    # Check wheater the value lookup commando was successful.
+    # Check whether the value lookup commando was successful.
     if [ ${returnValueStatusCode} -ne 0 ]; then
         echo "Error: The value lookup commando failed. Status code: ${returnValueStatusCode}" >&2
         exit 1
     fi
 
-    # Check wheater the value is empty.
+    # Check whether the value is empty.
     if [ -z "${returnValue}" ]; then
-        # Check wheater the value exists.
+        # Check whether the value exists.
         if ! ${GREP_CMD} -qP "${grepValuePattern}" "${statusFile}"; then
             echo "Error: Value doesn't exist." >&2
             exit 1

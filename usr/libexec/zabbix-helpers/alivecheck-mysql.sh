@@ -3,7 +3,7 @@
 # alivecheck-mysql.sh - Check the availability of a MySQL service
 ################################################################################
 #
-# Copyright (C) 2015 - 2016 stepping stone GmbH
+# Copyright (C) 2015 - 2019 stepping stone GmbH
 #                           Switzerland
 #                           http://www.stepping-stone.ch
 #                           support@stepping-stone.ch
@@ -45,8 +45,6 @@
 # DEBUG=true alivecheck-mysql.sh
 ################################################################################
 
-DEBUG="${DEBUG:-false}"
-
 # Root directory of the script
 ROOT_DIR="$(dirname $(readlink -f ${0}))/../../.."
 
@@ -57,6 +55,7 @@ DATE_CMD="/bin/date"
 HOSTNAME_CMD="/bin/hostname"
 MYSQL_CMD="/usr/bin/mysql"
 TIMEOUT_CMD="/usr/bin/timeout"
+MKTEMP_CMD="/usr/bin/mktemp"
 
 TIMESTAMP="$( ${DATE_CMD} +"%F %H:%M:%S" )"
 MY_HOSTNAME="$( ${HOSTNAME_CMD} )"
@@ -87,7 +86,7 @@ function prepareMysqlClient ()
     mysqlSslOpts=""
 
     # Enable SSL/TLS options if requested
-    if ${dbSsl}; then
+    if [[ "$dbSsl" = true ]]; then
         debug "Enabling secure connections"
 
         # Lookup version of MySQL client
@@ -95,13 +94,18 @@ function prepareMysqlClient ()
         debug "Detected MySQL client version: ${mysqlClientVersion}"
 
         # Use --ssl-mode from within version 5.7 (only Oracle MySQL, not MariaDB)
-        if [[ ! ${mysqlClientVersion} =~ 'MariaDB' ]] && [[ $( printf "5.7\n${mysqlClientVersion}" | sort -V | head -n1 ) == "5.7" ]]; then
-            mysqlSslOpts="--ssl-mode=REQUIRED --ssl-ca="${dbSslCaCert}""
-            ${dbSslVerifyServerCert} && mysqlSslOpts="--ssl-mode=VERIFY_IDENTITY --ssl-ca="${dbSslCaCert}""
+        if [[ ! "$mysqlClientVersion" =~ 'MariaDB' ]] && [[ $( printf "5.7\n${mysqlClientVersion}" | sort -V | head -n1 ) == "5.7" ]]; then
+            if [[ "$dbSslVerifyIdentity" = true ]]; then
+                mysqlSslOpts="--ssl-mode=VERIFY_IDENTITY --ssl-ca="${dbSslCaCert}""
+            else
+                mysqlSslOpts="--ssl-mode=REQUIRED --ssl-ca="${dbSslCaCert}""
+            fi
         # Otherwise use --ssl
         else
             mysqlSslOpts="--ssl --ssl-ca="${dbSslCaCert}""
-            ${dbSslVerifyServerCert} && mysqlSslOpts+=" --ssl-verify-server-cert"
+            if [[ "$dbSslVerifyIdentity" = true ]]; then
+                mysqlSslOpts+=" --ssl-verify-server-cert"
+            fi
         fi
     fi
 }
@@ -112,7 +116,16 @@ function prepareMysqlClient ()
 # dbGetOutput
 function dbGetOutput ()
 {
-    echo "${_DB_OUTPUT}"
+    echo "$_DB_STDOUT"
+}
+
+
+# Echos the last database client error
+#
+# dbGetError
+function dbGetError ()
+{
+    echo "$_DB_STDERR"
 }
 
 
@@ -126,25 +139,27 @@ function dbExecute ()
 
     # MySQL client command with connection and command timeout 
     # The user credentials are stored within ~/.my.cnf
-    local cmd="${TIMEOUT_CMD} --signal KILL ${mysqlCmdTimeout}s \
+    local cmd="${TIMEOUT_CMD} --signal KILL ${mysqlCmdTimeout}s
                    ${MYSQL_CMD} --host="${dbHost}"
                                 --database="${dbName}"
-			        --connect-timeout="${mysqlConTimeout}"
-			        --batch
-			        --silent
-			        ${mysqlSslOpts}"
+                                --connect-timeout="${mysqlConTimeout}"
+                                --batch
+                                --silent
+                                ${mysqlSslOpts}"
     
-    debug "MySQL command:\n${cmd}"
-    debug "MySQL query:  $query"
+    local tmpStdErrFile=$( ${MKTEMP_CMD} )
+    _DB_STDOUT="$( ${cmd} --execute="${query}" 2>"${tmpStdErrFile}" )"
+    local returnCode=$?
+    _DB_STDERR=$( <"${tmpStdErrFile}" )
+    rm "${tmpStdErrFile}"
 
-    local returnCode
-    _DB_OUTPUT="$( ${cmd} --execute="${query}" 2>&1 )"
-    returnCode=$?
-
+    debug "MySQL command:     ${cmd}"
+    debug "MySQL query:       ${query}"
     debug "MySQL return code: ${returnCode}"
-    debug "MySQL output:      ${_DB_OUTPUT}"
+    debug "MySQL output:      ${_DB_STDOUT}"
+    debug "MySQL error:       ${_DB_STDERR}"
 
-    return $returnCode
+    return "$returnCode"
 }
 
 # Echo a message if debug mode has been enabled
@@ -152,7 +167,9 @@ function dbExecute ()
 # debug message
 function debug ()
 {
-    ${DEBUG} && echo -e "$1"
+    if [[ "$DEBUG" = true ]]; then
+        echo -e "$1"
+    fi
 }
 
 # Exit with an error code
@@ -161,7 +178,7 @@ function debug ()
 function error ()
 {
     echo "$1"
-    ${DEBUG} && echo "ERROR: $2" >&2
+    debug "ERROR: $2" >&2
     exit 1
 }
 
@@ -173,7 +190,8 @@ function dbWrite ()
     local query="INSERT INTO ${dbTable} (hostname,date)
                  VALUES ('${MY_HOSTNAME}', '${TIMESTAMP}');"
 
-    dbExecute "$query" || error "2" "dbWrite failed: $(dbGetOutput)"
+    debug "Executing dbWrite"
+    dbExecute "$query" || error "2" "dbWrite failed: $(dbGetError)"
 }
 
 # Read from the database
@@ -184,12 +202,11 @@ function dbRead ()
     local query="SELECT COUNT(*) FROM ${dbTable}
                  WHERE hostname='${MY_HOSTNAME}' AND date='${TIMESTAMP}'"
 
-    # Although dbRead has failed,
-    # still try to clean up database to prevent it from growing
-    dbExecute "$query" || dbCleanup 'true'; error "3" "dbRead failed: $(dbGetOutput)"
+    debug "Executing dbRead"
+    dbExecute "$query" || error "3" "dbRead failed: $(dbGetError)"
 
     if ! [[ $(dbGetOutput) =~ ^[0-9]+$ ]]; then
-        error "3" "dbRead failed: Missing previously inserted record"
+        error "3" "dbRead failed: Missing previously inserted record. MySQL output: $(dbGetOutput)"
     fi
 }
 
@@ -205,10 +222,11 @@ function dbCleanup ()
     # stall entries.
     local query="DELETE FROM ${dbTable} WHERE hostname='${MY_HOSTNAME}'"
 
+    debug "Executing dbCleanup"
     if [[ "$doNotExitOnError" = true ]]; then
-        dbExecute "$query" || debug "dbCleanup failed: $(dbGetOutput)"
+        dbExecute "$query" || debug "dbCleanup failed: $(dbGetError)"
     else
-        dbExecute "$query" || error "4" "dbCleanup failed: $(dbGetOutput)"
+        dbExecute "$query" || error "4" "dbCleanup failed: $(dbGetError)"
     fi
 }
 

@@ -34,7 +34,6 @@ cat << EOF > /var/lib/zabbix/home/.my.cnf
 [client]
 user="${mysqlUser}"
 password="${mysqlUserPass}"
-ssl=0
 EOF
 chown root:zabbix /var/lib/zabbix/home/.my.cnf
 chmod 640 /var/lib/zabbix/home/.my.cnf
@@ -127,4 +126,19 @@ EOF_SQL
         Require ip <SomeIPs>
         ...
         Require local
+```
+
+## Workflow
+```
+# Always use the branch `develop` for changing files:
+git checkout develop
+git add ...
+git commit ...
+
+# Merge `develop` into `master`:
+git checkout master
+git merge --no-ff develop
+
+# Push all changes
+git push --all
 ```
