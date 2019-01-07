@@ -127,3 +127,18 @@ EOF_SQL
         ...
         Require local
 ```
+
+## Workflow
+```
+# Always use the branch `develop` for changing files:
+git checkout develop
+git add ...
+git commit ...
+
+# Merge `develop` into `master`:
+git checkout master
+git merge --no-ff develop
+
+# Push all changes
+git push --all
+```
