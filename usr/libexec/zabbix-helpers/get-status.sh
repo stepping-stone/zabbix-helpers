@@ -408,7 +408,7 @@ function getValue ()
     if [ -z "${returnValue}" ]; then
         # Check whether the value exists.
         if ! ${GREP_CMD} -qP "${grepValuePattern}" "${statusFile}"; then
-            echo "Error: Value doesn't exist." >&2
+            echo "Error: Couldn't find value for "${valueName}"." >&2
             exit 1
         fi
         ${showDebugMessages} && echo "Info: Value is empty."
